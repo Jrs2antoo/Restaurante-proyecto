@@ -48,7 +48,7 @@ const esperarUsuario = () => {
 
 router.beforeEach(async (to, from) => {
   const usuarioLogueado = await esperarUsuario();
-  const ADMIN_ID = "jPW14sWmJpNMeVhaJURSIbLEVj72";
+  const ADMIN_ID = "0zqRdP39nXRgH7Cl3ukyjEqEy6v2";
 
   if (to.meta.onlyAdmin && usuarioLogueado?.uid !== ADMIN_ID) {
     return "/inicio"; // Redirige a la página de administración si el usuario no es admin

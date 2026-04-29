@@ -2,11 +2,7 @@
   "$schema": "https://github.com/Azure/data-api-builder/releases/download/v1.2.0/dab.draft.schema.json",
   "data-source": {
     "database-type": "mysql",
-<<<<<<< HEAD
-    "connection-string": "Server=localhost;Port=3307;Database=proyecto2daw;User=root;Password=admin;"
-=======
     "connection-string": "Server=localhost;Port=3307;Database=proyecto2daw;User=root;Password=root;"
->>>>>>> 02f88347744377700439dec7c6fb990e93dce2f7
   },
   "runtime": {
     "rest": { "enabled": true, "path": "/api" },
@@ -21,46 +17,36 @@
   },
   "entities": {
     "Usuario": {
-      "source": "Usuario",
-      "permissions": [{ "role": "authenticated", "actions": ["*"] }]
+      "source": "usuario",
+      "permissions": [{ "role": "anonymous", "actions": ["*"] }]
     },
     "Cliente": {
-      "source": "Cliente",
-      "permissions": [{ "role": "authenticated", "actions": ["*"] }]
+      "source": "cliente",
+      "permissions": [{ "role": "anonymous", "actions": ["*"] }]
     },
     "Empleado": {
-      "source": "Empleado",
-      "permissions": [{ "role": "authenticated", "actions": ["*"] }]
+      "source": "empleado",
+      "permissions": [{ "role": "anonymous", "actions": ["*"] }]
     },
     "Cocinero": {
-      "source": "Cocinero",
-      "permissions": [{ "role": "authenticated", "actions": ["*"] }]
+      "source": "cocinero",
+      "permissions": [{ "role": "anonymous", "actions": ["*"] }]
     },
     "Administrador": {
-      "source": "Administrador",
-      "permissions": [{ "role": "authenticated", "actions": ["*"] }]
+      "source": "administrador",
+      "permissions": [{ "role": "anonymous", "actions": ["*"] }]
     },
     "Mesa": {
-      "source": "Mesa",
-      "permissions": [
-        { "role": "anonymous", "actions": ["read"] },
-        { "role": "authenticated", "actions": ["*"] }
-      ]
+      "source": "mesa",
+      "permissions": [{ "role": "anonymous", "actions": ["*"] }]
     },
     "Reserva": {
-      "source": "Reserva",
-      "permissions": [{ "role": "authenticated", "actions": ["*"] }]
+      "source": "reserva",
+      "permissions": [{ "role": "anonymous", "actions": ["*"] }]
     },
     "Producto": {
-      "source": "Producto",
-      "permissions": [
-        { "role": "anonymous", "actions": ["read"] },
-        { "role": "authenticated", "actions": ["*"] }
-      ]
+      "source": "producto",
+      "permissions": [{ "role": "anonymous", "actions": ["*"] }]
     }
   }
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 02f88347744377700439dec7c6fb990e93dce2f7
