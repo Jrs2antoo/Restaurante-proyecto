@@ -2,7 +2,11 @@
   "$schema": "https://github.com/Azure/data-api-builder/releases/download/v1.2.0/dab.draft.schema.json",
   "data-source": {
     "database-type": "mysql",
+<<<<<<< HEAD
     "connection-string": "Server=localhost;Port=3307;Database=proyecto2daw;User=root;Password=admin;"
+=======
+    "connection-string": "Server=localhost;Port=3307;Database=proyecto2daw;User=root;Password=root;"
+>>>>>>> 02f88347744377700439dec7c6fb990e93dce2f7
   },
   "runtime": {
     "rest": { "enabled": true, "path": "/api" },
@@ -55,4 +59,8 @@
       ]
     }
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 02f88347744377700439dec7c6fb990e93dce2f7
