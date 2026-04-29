@@ -2,12 +2,14 @@
   <div id="app">
     <!-- NAVBAR -->
     <nav :class="{ scrolled: isScrolled }">
-      <a href="#" class="nav-logo">La <span>Brasa</span></a>
+      <RouterLink to="/" class="nav-logo">La <span>Brasa</span></RouterLink>
       <ul class="nav-links">
-        <li><a href="#">Inicio</a></li>
-        <li><a href="#">Menú</a></li>
-        <li><a href="#">Reservas</a></li>
-        <li><a href="#" class="nav-btn">Iniciar Sesión</a></li>
+        <li><RouterLink to="/">Inicio</RouterLink></li>
+        <li><RouterLink to="/catalogo">Menú</RouterLink></li>
+        <li><RouterLink to="/reservas">Reservas</RouterLink></li>
+        <li>
+          <RouterLink to="/login" class="nav-btn">Iniciar Sesión</RouterLink>
+        </li>
       </ul>
     </nav>
 
@@ -24,7 +26,7 @@
         <p class="hero-sub">
           Producto local, fuego lento y una mesa que siempre te espera.
         </p>
-        <a href="#" class="hero-cta">Reservar mesa</a>
+        <RouterLink to="/reservas" class="hero-cta">Reservar mesa</RouterLink>
       </div>
       <div class="hero-scroll">
         <div class="hero-scroll-line"></div>
@@ -124,6 +126,7 @@
 
 <script setup>
 import { ref, onMounted } from "vue";
+import { RouterLink } from "vue-router";
 
 const isScrolled = ref(false);
 
