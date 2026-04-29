@@ -46,20 +46,25 @@ const esperarUsuario = () => {
   });
 };
 
-router.beforeEach(async (to, from) => {
+/*
+router.beforeEach(async (to) => {
   const usuarioLogueado = await esperarUsuario();
   const ADMIN_ID = "0zqRdP39nXRgH7Cl3ukyjEqEy6v2";
 
+  // Usuario no es admin intentando entrar a ruta de admin
   if (to.meta.onlyAdmin && usuarioLogueado?.uid !== ADMIN_ID) {
-    return "/inicio"; // Redirige a la página de administración si el usuario no es admin
+    return "/";
   }
 
+  // Ruta protegida sin estar logueado
   if (to.meta.requireAuth && !usuarioLogueado) {
     return "/login";
   }
 
-  if (!to.meta.requireAuth && usuarioLogueado) {
-    return "/inicio"; // Redirige a la página de inicio si el usuario ya está logueado
+  // Ya logueado intentando entrar a login/register
+  if (!to.meta.requireAuth && usuarioLogueado && to.path !== "/") {
+    return "/";
   }
 });
+*/
 export default router;
