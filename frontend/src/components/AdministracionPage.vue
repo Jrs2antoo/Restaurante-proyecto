@@ -1,184 +1,253 @@
 <template>
   <div class="admin-container">
+    <!-- SIDEBAR -->
     <aside class="admin-sidebar">
-      <div class="sidebar-logo">La <span>Brasa</span> Admin</div>
+      <div class="sidebar-logo">La <span>Brasa</span></div>
       <nav class="sidebar-nav">
-        <button @click="currentTab = 'reservas'" :class="{ active: currentTab === 'reservas' }">
-          📅 Reservas
-        </button>
-        <button @click="currentTab = 'productos'" :class="{ active: currentTab === 'productos' }">
-          🍳 Carta/Productos
-        </button>
-        <button @click="currentTab = 'mesas'" :class="{ active: currentTab === 'mesas' }">
-          🪑 Mesas
+        <button :class="{ active: currentTab === 'usuarios' }" @click="currentTab = 'usuarios'">
+          👤 Usuarios
         </button>
       </nav>
+      <button class="btn-logout" @click="handleLogout">🚪 Cerrar sesión</button>
     </aside>
 
+    <!-- MAIN -->
     <main class="admin-main">
       <header class="admin-header">
-        <h1>Gestión de {{ currentTab.charAt(0).toUpperCase() + currentTab.slice(1) }}</h1>
-        <button class="btn-add" @click="openModal">+ Nuevo Registro</button>
+        <h1>Usuarios</h1>
       </header>
 
-      <div class="admin-card table-wrapper">
-        <table v-if="dataList.length">
+      <!-- LOADING -->
+      <div v-if="loading" class="state-msg">Cargando usuarios...</div>
+
+      <!-- ERROR -->
+      <div v-else-if="error" class="state-msg error">{{ error }}</div>
+
+      <!-- TABLA -->
+      <div v-else class="admin-card table-wrapper">
+        <table>
           <thead>
             <tr>
-              <th v-for="key in Object.keys(dataList[0])" :key="key">{{ key }}</th>
-              <th>Acciones</th>
+              <th>ID</th>
+              <th>Nombre</th>
+              <th>Apellido</th>
+              <th>Email</th>
+              <th>Rol</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="item in dataList" :key="item.id">
-              <td v-for="(val, key) in item" :key="key">{{ val }}</td>
+            <tr v-for="user in usuarios" :key="user.idUsuario">
+              <td>{{ user.idUsuario }}</td>
+              <td>{{ user.nombre }}</td>
+              <td>{{ user.apellido }}</td>
+              <td>{{ user.email }}</td>
               <td>
-                <button class="btn-action edit" @click="editItem(item)">✏️</button>
-                <button class="btn-action delete" @click="deleteItem(item.id)">🗑️</button>
+                <span class="badge" :class="user.rol">{{ user.rol }}</span>
               </td>
             </tr>
           </tbody>
         </table>
-        <p v-else class="loading-text">Cargando datos de la API...</p>
+        <p class="total">Total: {{ usuarios.length }} usuarios</p>
       </div>
     </main>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from "vue";
+import { ref, onMounted } from "vue";
+import { getAuth, signOut } from "firebase/auth";
+import { useRouter } from "vue-router";
 
-const currentTab = ref("reservas");
-const dataList = ref([]);
-const API_URL = "http://localhost:3000/api";
+const usuarios = ref([]);
+const loading = ref(true);
+const error = ref("");
+const currentTab = ref("usuarios");
+const router = useRouter();
 
-// Función para obtener datos dinámicamente según la entidad
-const fetchData = async () => {
-  dataList.value = [];
+const fetchUsuarios = async () => {
+  loading.value = true;
+  error.value = "";
   try {
-    // El nombre de la entidad en tu DAB config empieza con mayúscula
-    const entity = currentTab.value.charAt(0).toUpperCase() + currentTab.value.slice(1).replace(/s$/, ""); 
-    const response = await fetch(`${API_URL}/${entity}`);
-    const json = await response.json();
-    dataList.value = json.value; // DAB devuelve los datos en un array "value"
-  } catch (error) {
-    console.error("Error cargando datos:", error);
+    const res = await fetch("/api/Usuario");
+    if (!res.ok) throw new Error(`Error ${res.status}`);
+    const json = await res.json();
+    usuarios.value = json.value;
+  } catch (e) {
+    error.value = "No se pudieron cargar los usuarios. Comprueba que la API está activa.";
+  } finally {
+    loading.value = false;
   }
 };
 
-const deleteItem = async (id) => {
-  if (confirm("¿Estás seguro de eliminar este registro?")) {
-    const entity = currentTab.value.charAt(0).toUpperCase() + currentTab.value.slice(1).replace(/s$/, "");
-    await fetch(`${API_URL}/${entity}/id/${id}`, { method: "DELETE" });
-    fetchData();
-  }
+const handleLogout = async () => {
+  await signOut(getAuth());
+  router.push("/login");
 };
 
-watch(currentTab, fetchData);
-onMounted(fetchData);
+onMounted(fetchUsuarios);
 </script>
 
 <style scoped>
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;1,400&family=Montserrat:wght@300;400;500;600&display=swap");
+
 .admin-container {
   display: grid;
-  grid-template-columns: 260px 1fr;
+  grid-template-columns: 240px 1fr;
   min-height: 100vh;
+  font-family: "Montserrat", sans-serif;
   background: #fdfbf9;
-  font-family: 'Montserrat', sans-serif;
 }
 
 /* SIDEBAR */
 .admin-sidebar {
   background: #1a1410;
   color: #f5f0e8;
-  padding: 2rem;
+  padding: 2rem 1.5rem;
+  display: flex;
+  flex-direction: column;
 }
 .sidebar-logo {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: "Cormorant Garamond", serif;
   font-size: 1.5rem;
   font-weight: 600;
   margin-bottom: 3rem;
 }
-.sidebar-logo span { color: #c9963a; }
-
+.sidebar-logo span {
+  color: #c9963a;
+  font-style: italic;
+}
 .sidebar-nav {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.5rem;
+  flex: 1;
 }
 .sidebar-nav button {
   background: transparent;
   border: none;
   color: #f5f0e8;
   text-align: left;
-  padding: 12px;
-  font-size: 0.9rem;
+  padding: 12px 16px;
+  font-family: "Montserrat", sans-serif;
+  font-size: 0.85rem;
   cursor: pointer;
   border-radius: 4px;
-  transition: 0.3s;
+  transition: 0.2s;
 }
-.sidebar-nav button.active, .sidebar-nav button:hover {
+.sidebar-nav button.active,
+.sidebar-nav button:hover {
   background: rgba(201, 150, 58, 0.2);
   color: #c9963a;
 }
+.btn-logout {
+  background: transparent;
+  border: 1px solid rgba(245, 240, 232, 0.15);
+  color: rgba(245, 240, 232, 0.5);
+  padding: 10px 16px;
+  font-family: "Montserrat", sans-serif;
+  font-size: 0.8rem;
+  cursor: pointer;
+  border-radius: 4px;
+  text-align: left;
+  transition: 0.2s;
+}
+.btn-logout:hover {
+  border-color: #c9963a;
+  color: #c9963a;
+}
 
-/* MAIN CONTENT */
+/* MAIN */
 .admin-main {
   padding: 3rem;
 }
 .admin-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   margin-bottom: 2.5rem;
 }
 .admin-header h1 {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: "Cormorant Garamond", serif;
   font-size: 2.5rem;
+  font-weight: 300;
   color: #1a1410;
 }
 
-.btn-add {
-  background: #c9963a;
-  color: white;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 2px;
-  cursor: pointer;
-  font-weight: 600;
+/* ESTADO */
+.state-msg {
+  padding: 2rem;
+  text-align: center;
+  color: #6b4c2a;
+  font-size: 0.9rem;
+}
+.state-msg.error {
+  color: #c0392b;
+  background: #fdf0ee;
+  border-radius: 4px;
 }
 
-/* TABLE */
+/* TABLA */
 .admin-card {
   background: white;
-  padding: 1.5rem;
   border-radius: 4px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
 }
 table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.85rem;
 }
-th {
-  text-align: left;
-  padding: 1rem;
+thead {
   background: #f8f5f2;
-  color: #6b4c2a;
+}
+th {
+  padding: 1rem 1.2rem;
+  text-align: left;
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  color: #6b4c2a;
+  font-weight: 600;
 }
 td {
-  padding: 1rem;
-  border-bottom: 1px solid #eee;
+  padding: 1rem 1.2rem;
+  border-bottom: 1px solid #f0ebe4;
+  color: #2d2520;
 }
-.btn-action {
-  background: none;
-  border: none;
-  cursor: pointer;
-  margin-right: 8px;
-  filter: grayscale(1);
-  transition: 0.2s;
+tbody tr:last-child td {
+  border-bottom: none;
 }
-.btn-action:hover { filter: grayscale(0); transform: scale(1.2); }
+tbody tr:hover {
+  background: #fdfaf7;
+}
+
+/* BADGE ROL */
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: capitalize;
+}
+.badge.cliente {
+  background: #e8f4ea;
+  color: #2e7d32;
+}
+.badge.empleado {
+  background: #fff3e0;
+  color: #e65100;
+}
+.badge.admin {
+  background: #fce4ec;
+  color: #c62828;
+}
+
+/* TOTAL */
+.total {
+  padding: 1rem 1.2rem;
+  font-size: 0.75rem;
+  color: #a89880;
+  border-top: 1px solid #f0ebe4;
+  text-align: right;
+}
 </style>
