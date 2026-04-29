@@ -1,0 +1,58 @@
+{
+  "$schema": "https://github.com/Azure/data-api-builder/releases/download/v1.2.0/dab.draft.schema.json",
+  "data-source": {
+    "database-type": "mysql",
+    "connection-string": "Server=localhost;Port=3307;Database=proyecto2daw;User=root;Password=admin;"
+  },
+  "runtime": {
+    "rest": { "enabled": true, "path": "/api" },
+    "graphql": { "enabled": true, "path": "/graphql" },
+    "host": {
+      "mode": "development",
+      "cors": {
+        "origins": ["http://localhost:3000"],
+        "allow-credentials": false
+      }
+    }
+  },
+  "entities": {
+    "Usuario": {
+      "source": "Usuario",
+      "permissions": [{ "role": "authenticated", "actions": ["*"] }]
+    },
+    "Cliente": {
+      "source": "Cliente",
+      "permissions": [{ "role": "authenticated", "actions": ["*"] }]
+    },
+    "Empleado": {
+      "source": "Empleado",
+      "permissions": [{ "role": "authenticated", "actions": ["*"] }]
+    },
+    "Cocinero": {
+      "source": "Cocinero",
+      "permissions": [{ "role": "authenticated", "actions": ["*"] }]
+    },
+    "Administrador": {
+      "source": "Administrador",
+      "permissions": [{ "role": "authenticated", "actions": ["*"] }]
+    },
+    "Mesa": {
+      "source": "Mesa",
+      "permissions": [
+        { "role": "anonymous", "actions": ["read"] },
+        { "role": "authenticated", "actions": ["*"] }
+      ]
+    },
+    "Reserva": {
+      "source": "Reserva",
+      "permissions": [{ "role": "authenticated", "actions": ["*"] }]
+    },
+    "Producto": {
+      "source": "Producto",
+      "permissions": [
+        { "role": "anonymous", "actions": ["read"] },
+        { "role": "authenticated", "actions": ["*"] }
+      ]
+    }
+  }
+}
