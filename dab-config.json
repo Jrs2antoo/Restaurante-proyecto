@@ -17,42 +17,36 @@
   },
   "entities": {
     "Usuario": {
-      "source": "Usuario",
-      "permissions": [{ "role": "authenticated", "actions": ["*"] }]
+      "source": "usuario",
+      "permissions": [{ "role": "anonymous", "actions": ["*"] }]
     },
     "Cliente": {
-      "source": "Cliente",
-      "permissions": [{ "role": "authenticated", "actions": ["*"] }]
+      "source": "cliente",
+      "permissions": [{ "role": "anonymous", "actions": ["*"] }]
     },
     "Empleado": {
-      "source": "Empleado",
-      "permissions": [{ "role": "authenticated", "actions": ["*"] }]
+      "source": "empleado",
+      "permissions": [{ "role": "anonymous", "actions": ["*"] }]
     },
     "Cocinero": {
-      "source": "Cocinero",
-      "permissions": [{ "role": "authenticated", "actions": ["*"] }]
+      "source": "cocinero",
+      "permissions": [{ "role": "anonymous", "actions": ["*"] }]
     },
     "Administrador": {
-      "source": "Administrador",
-      "permissions": [{ "role": "authenticated", "actions": ["*"] }]
+      "source": "administrador",
+      "permissions": [{ "role": "anonymous", "actions": ["*"] }]
     },
     "Mesa": {
-      "source": "Mesa",
-      "permissions": [
-        { "role": "anonymous", "actions": ["read"] },
-        { "role": "authenticated", "actions": ["*"] }
-      ]
+      "source": "mesa",
+      "permissions": [{ "role": "anonymous", "actions": ["*"] }]
     },
     "Reserva": {
-      "source": "Reserva",
-      "permissions": [{ "role": "authenticated", "actions": ["*"] }]
+      "source": "reserva",
+      "permissions": [{ "role": "anonymous", "actions": ["*"] }]
     },
     "Producto": {
-      "source": "Producto",
-      "permissions": [
-        { "role": "anonymous", "actions": ["read"] },
-        { "role": "authenticated", "actions": ["*"] }
-      ]
+      "source": "producto",
+      "permissions": [{ "role": "anonymous", "actions": ["*"] }]
     }
   }
 }
