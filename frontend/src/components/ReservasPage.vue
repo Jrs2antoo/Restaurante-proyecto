@@ -198,15 +198,15 @@
             <div class="form-grid">
               <div class="form-group">
                 <label class="form-label">Nombre completo <span class="required">*</span></label>
-                <input v-model="contacto.nombre" class="form-input" type="text" placeholder="Rafael Moreno" />
+                <input v-model="contacto.nombre" class="form-input" type="text" placeholder="Rafael Moreno" :readonly="contactoBloqueado.nombre" />
               </div>
               <div class="form-group">
                 <label class="form-label">Teléfono <span class="required">*</span></label>
-                <input v-model="contacto.telefono" class="form-input" type="tel" placeholder="+34 600 000 000" />
+                <input v-model="contacto.telefono" class="form-input" type="tel" placeholder="+34 600 000 000" :readonly="contactoBloqueado.telefono" />
               </div>
               <div class="form-group full-width">
                 <label class="form-label">Correo electrónico <span class="required">*</span></label>
-                <input v-model="contacto.email" class="form-input" type="email" placeholder="tu@correo.com" />
+                <input v-model="contacto.email" class="form-input" type="email" placeholder="tu@correo.com" :readonly="contactoBloqueado.email" />
               </div>
               <div class="form-group full-width">
                 <label class="form-label">Peticiones especiales <span class="optional">(opcional)</span></label>
@@ -325,30 +325,6 @@
 
                 <!-- Tarjeta de crédito -->
                 <div v-if="metodoPago === 'tarjeta'" class="tarjeta-form">
-                  <div class="tarjeta-preview" :class="{ flipped: showCVV }">
-                    <div class="tarjeta-front">
-                      <div class="tarjeta-chip"></div>
-                      <div class="tarjeta-num">{{ formatCardNum(pago.numero) }}</div>
-                      <div class="tarjeta-bottom">
-                        <div>
-                          <div class="tarjeta-sublabel">Titular</div>
-                          <div class="tarjeta-val">{{ pago.titular || 'NOMBRE APELLIDO' }}</div>
-                        </div>
-                        <div>
-                          <div class="tarjeta-sublabel">Expira</div>
-                          <div class="tarjeta-val">{{ pago.expiry || 'MM/AA' }}</div>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="tarjeta-back">
-                      <div class="tarjeta-strip"></div>
-                      <div class="tarjeta-cvv-row">
-                        <div class="tarjeta-cvv-box">{{ pago.cvv || '•••' }}</div>
-                        <span class="tarjeta-cvv-label">CVV</span>
-                      </div>
-                    </div>
-                  </div>
-
                   <div class="form-grid">
                     <div class="form-group full-width">
                       <label class="form-label">Número de tarjeta</label>
@@ -377,8 +353,6 @@
                         type="text"
                         placeholder="•••"
                         maxlength="4"
-                        @focus="showCVV = true"
-                        @blur="showCVV = false"
                       />
                     </div>
                   </div>
@@ -478,22 +452,21 @@
 </template>
 
 <script>
-// ReservasPage.vue — sección <script>
-// Requiere: DAB corriendo en http://localhost:5000
-// Entidades DAB necesarias: Mesa, Reserva (con permisos anonymous *)
-
 import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
 
-const DAB = "http://localhost:5000/api";
+const DAB = "/api";
 
 export default {
   name: "ReservasPage",
+
   data() {
     const hoy = new Date();
+
     return {
       isScrolled: false,
       usuarioActual: null,
       menuAbierto: false,
+
       currentStep: 1,
       steps: ["Disponibilidad", "Tus datos", "Pago"],
 
@@ -502,14 +475,16 @@ export default {
       diasSemana: ["Lu", "Ma", "Mi", "Ju", "Vi", "Sá", "Do"],
       fechaSeleccionada: null,
 
-      // Mesa y personas
+      // Reserva
       mesaSeleccionada: null,
       personas: 2,
       ubicacion: "interior",
 
-      // Datos cargados desde la BD
-      todasLasMesas: [],       // Array de mesas: { idMesa, capacidad, ubicacion, disponible }
-      reservasDelDia: [],      // Array de reservas de la fecha seleccionada
+      // Datos BD
+      todasLasMesas: [],
+      reservasDelDia: [],
+      reservasPorFecha: {},
+
       cargandoMesas: false,
       cargandoReservas: false,
 
@@ -521,12 +496,28 @@ export default {
         peticiones: "",
       },
 
+      contactoBloqueado: {
+        nombre: false,
+        telefono: false,
+        email: false,
+      },
+
       // Pago
       metodoPago: "tarjeta",
+
       metodosPago: [
-        { id: "tarjeta", icon: "💳", label: "Tarjeta de crédito/débito" },
-        { id: "bizum",   icon: "📱", label: "Bizum" },
+        {
+          id: "tarjeta",
+          icon: "💳",
+          label: "Tarjeta",
+        },
+        {
+          id: "bizum",
+          icon: "📱",
+          label: "Bizum",
+        },
       ],
+
       pago: {
         numero: "",
         titular: "",
@@ -534,6 +525,7 @@ export default {
         cvv: "",
         bizumTel: "",
       },
+
       showCVV: false,
       pagando: false,
       referencia: "",
@@ -543,58 +535,95 @@ export default {
   },
 
   computed: {
+
     inicialUsuario() {
       return this.usuarioActual?.displayName?.charAt(0).toUpperCase() || "U";
     },
+
     nombreUsuario() {
-      return this.usuarioActual?.displayName || this.usuarioActual?.email || "Usuario";
+      return this.usuarioActual?.displayName ||
+          this.usuarioActual?.email ||
+          "Usuario";
     },
+
     esAdmin() {
       return this.usuarioActual?.uid === "0zqRdP39nXRgH7Cl3ukyjEqEy6v2";
     },
+
     anioActual() {
       return this.mesVista.getFullYear();
     },
+
     mesActualNombre() {
-      return this.mesVista.toLocaleString("es-ES", { month: "long" }).replace(/^\w/, c => c.toUpperCase());
+      return this.mesVista
+          .toLocaleString("es-ES", { month: "long" })
+          .replace(/^\w/, c => c.toUpperCase());
     },
+
     diasCalendario() {
-      const year  = this.mesVista.getFullYear();
+
+      const year = this.mesVista.getFullYear();
       const month = this.mesVista.getMonth();
+
       const primerDia = new Date(year, month, 1);
+
       let startDow = primerDia.getDay();
+
       startDow = startDow === 0 ? 6 : startDow - 1;
+
       const totalDias = new Date(year, month + 1, 0).getDate();
+
       const dias = [];
-      for (let i = 0; i < startDow; i++) dias.push(null);
-      for (let d = 1; d <= totalDias; d++) dias.push(new Date(year, month, d));
+
+      for (let i = 0; i < startDow; i++) {
+        dias.push(null);
+      }
+
+      for (let d = 1; d <= totalDias; d++) {
+        dias.push(new Date(year, month, d));
+      }
+
       return dias;
     },
 
     fechaISO() {
+
       if (!this.fechaSeleccionada) return "";
+
       const d = this.fechaSeleccionada;
+
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     },
 
-    // Mesas filtradas por ubicación y disponibles durante todo el día elegido.
     mesasDisponibles() {
+
       if (!this.fechaSeleccionada) return [];
 
       const mesasOcupadasIds = this.reservasDelDia
-        .filter(r => r.estado === "confirmada" || r.estado === "pendiente")
-        .map(r => r.idMesa);
+          .filter(r =>
+              r.estado === "confirmada" ||
+              r.estado === "pendiente"
+          )
+          .map(r => r.idMesa);
 
       return this.todasLasMesas
-        .filter(m => {
-          const ubUsuario = this.ubicacion.toLowerCase();
-          const ubMesa = (m.ubicacion || "").toLowerCase();
-          return ubUsuario === "cualquiera" || ubMesa === ubUsuario;
-        })
-        .map(m => ({
-          ...m,
-          disponible: !!m.disponible && !mesasOcupadasIds.includes(m.idMesa),
-        }));
+
+          .filter(m => {
+
+            const ubUsuario = this.ubicacion.toLowerCase();
+            const ubMesa = (m.ubicacion || "").toLowerCase();
+
+            return ubUsuario === "cualquiera" || ubMesa === ubUsuario;
+          })
+
+          .map(m => ({
+
+            ...m,
+
+            disponible:
+                !!m.disponible &&
+                !mesasOcupadasIds.includes(m.idMesa),
+          }));
     },
 
     mesasLibres() {
@@ -602,19 +631,45 @@ export default {
     },
 
     disponibilidadMesas() {
-      if (this.cargandoReservas || this.cargandoMesas) {
-        return { texto: "Comprobando disponibilidad…", clase: "disp-gris" };
+
+      if (this.cargandoMesas || this.cargandoReservas) {
+        return {
+          texto: "Comprobando disponibilidad…",
+          clase: "disp-gris",
+        };
       }
+
       const libres = this.mesasLibres;
-      if (libres === 0) return { texto: "Sin mesas disponibles para este día", clase: "disp-rojo" };
-      if (libres <= 2)  return { texto: `¡Últimas ${libres} mesa${libres === 1 ? "" : "s"} disponibles!`, clase: "disp-amarillo" };
-      return { texto: `${libres} mesas disponibles`, clase: "disp-verde" };
+
+      if (libres === 0) {
+        return {
+          texto: "Sin mesas disponibles",
+          clase: "disp-rojo",
+        };
+      }
+
+      if (libres <= 2) {
+        return {
+          texto: `¡Últimas ${libres} mesas disponibles!`,
+          clase: "disp-amarillo",
+        };
+      }
+
+      return {
+        texto: `${libres} mesas disponibles`,
+        clase: "disp-verde",
+      };
     },
 
     fechaFormateada() {
+
       if (!this.fechaSeleccionada) return "–";
+
       return this.fechaSeleccionada.toLocaleDateString("es-ES", {
-        weekday: "long", day: "numeric", month: "long", year: "numeric",
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
       });
     },
 
@@ -623,251 +678,707 @@ export default {
     },
 
     canGoStep2() {
-      return this.fechaSeleccionada && this.ubicacion && this.mesaSeleccionada && this.mesasLibres > 0;
+
+      return (
+          this.fechaSeleccionada &&
+          this.ubicacion &&
+          this.mesaSeleccionada
+      );
     },
+
     canGoStep3() {
-      return this.contacto.nombre && this.contacto.telefono && this.contacto.email;
+
+      return (
+          this.contacto.nombre &&
+          this.contacto.telefono &&
+          this.contacto.email
+      );
     },
+
     canPagar() {
+
       if (this.metodoPago === "tarjeta") {
+
         return (
-          this.pago.numero.length >= 19 &&
-          this.pago.titular &&
-          this.pago.expiry.length === 5 &&
-          this.pago.cvv.length >= 3
+            this.pago.numero.length >= 19 &&
+            this.pago.titular &&
+            this.pago.expiry.length === 5 &&
+            this.pago.cvv.length >= 3
         );
       }
+
       if (this.metodoPago === "bizum") {
         return this.pago.bizumTel.length >= 9;
       }
+
       return false;
     },
   },
 
   watch: {
-    // Cuando cambia la fecha, recargamos mesas (una sola vez) y reservas del día
+
     async fechaSeleccionada(nuevaFecha) {
+
       if (!nuevaFecha) return;
+
       this.mesaSeleccionada = null;
-      await Promise.all([this.cargarMesas(), this.cargarReservasDelDia()]);
+
+      await this.cargarReservasDelDia();
     },
+
     ubicacion() {
       this.mesaSeleccionada = null;
     },
+
     personas() {
-      const mesa = this.mesasDisponibles.find(m => m.idMesa === this.mesaSeleccionada);
-      if (!mesa || !mesa.disponible || mesa.capacidad < this.personas) {
+
+      const mesa = this.mesasDisponibles.find(
+          m => m.idMesa === this.mesaSeleccionada
+      );
+
+      if (!mesa || mesa.capacidad < this.personas) {
         this.mesaSeleccionada = null;
       }
     },
   },
 
   mounted() {
+
     const auth = getAuth();
-    onAuthStateChanged(auth, user => {
+
+    onAuthStateChanged(auth, async user => {
       this.usuarioActual = user;
+      await this.autocompletarContacto();
     });
+
     window.addEventListener("scroll", this.handleScroll);
-    // Cargamos mesas al montar para saber si hay disponibilidad en el calendario
-    this.cargarMesas();
+
+    Promise.all([
+      this.cargarMesas(),
+      this.cargarReservasMes(),
+    ]);
   },
+
   beforeUnmount() {
     window.removeEventListener("scroll", this.handleScroll);
   },
 
   methods: {
+
     handleScroll() {
       this.isScrolled = window.scrollY > 50;
     },
+
     toggleMenu() {
       this.menuAbierto = !this.menuAbierto;
     },
+
     async cerrarSesion() {
+
       await signOut(getAuth());
+
       this.$router.push("/login");
     },
 
-    // ─── Calendario ────────────────────────────────────────────────────────────
+    async autocompletarContacto() {
+
+      const emailUsuario =
+          this.usuarioActual?.email;
+
+      if (!emailUsuario) return;
+
+      this.contacto.email = emailUsuario;
+      this.contactoBloqueado.email = true;
+
+      if (!this.contacto.nombre && this.usuarioActual?.displayName) {
+        this.contacto.nombre = this.usuarioActual.displayName;
+        this.contactoBloqueado.nombre = true;
+      }
+
+      try {
+
+        const usuarioRes =
+            await fetch(`${DAB}/Usuario`);
+
+        if (!usuarioRes.ok) return;
+
+        const usuarioJson =
+            await usuarioRes.json();
+
+        const usuarios =
+            usuarioJson.value || [];
+
+        const usuarioMySQL =
+            usuarios.find(
+                u =>
+                    u.email?.toLowerCase() ===
+                    emailUsuario.toLowerCase()
+            );
+
+        if (!usuarioMySQL) return;
+
+        const nombreCompleto =
+            `${usuarioMySQL.nombre || ""} ${usuarioMySQL.apellido || ""}`
+                .trim();
+
+        if (nombreCompleto) {
+          this.contacto.nombre = nombreCompleto;
+          this.contactoBloqueado.nombre = true;
+        }
+
+        const clienteRes =
+            await fetch(`${DAB}/Cliente`);
+
+        if (!clienteRes.ok) return;
+
+        const clienteJson =
+            await clienteRes.json();
+
+        const clientes =
+            clienteJson.value || [];
+
+        const clienteMySQL =
+            clientes.find(c => c.idUsuario === usuarioMySQL.idUsuario);
+
+        if (clienteMySQL?.telefono) {
+          this.contacto.telefono = clienteMySQL.telefono;
+          this.contactoBloqueado.telefono = true;
+        }
+
+      } catch (e) {
+
+        console.error("Error autocompletando contacto:", e);
+      }
+    },
+
     prevMonth() {
+
       const d = new Date(this.mesVista);
+
       d.setMonth(d.getMonth() - 1);
+
       this.mesVista = d;
+
+      this.cargarReservasMes();
     },
+
     nextMonth() {
+
       const d = new Date(this.mesVista);
+
       d.setMonth(d.getMonth() + 1);
+
       this.mesVista = d;
+
+      this.cargarReservasMes();
     },
+
     isPast(day) {
+
       const hoy = new Date();
+
       hoy.setHours(0, 0, 0, 0);
+
       return day < hoy;
     },
+
     isToday(day) {
       return day.toDateString() === new Date().toDateString();
     },
-     isDayAvailable(day) {
-        return !this.isPast(day);
-    },
+
     isSameDay(a, b) {
+
       if (!a || !b) return false;
+
       return a.toDateString() === b.toDateString();
     },
+
+    isDayAvailable(day) {
+
+      if (this.isPast(day)) return false;
+
+      const iso =
+          `${day.getFullYear()}-${String(day.getMonth()+1).padStart(2,'0')}-${String(day.getDate()).padStart(2,'0')}`;
+
+      const reservasEseDia =
+          this.reservasPorFecha[iso] || [];
+
+      const mesasOcupadas =
+          reservasEseDia
+              .filter(r =>
+                  r.estado === "confirmada" ||
+                  r.estado === "pendiente"
+              )
+              .map(r => r.idMesa);
+
+      return mesasOcupadas.length < this.todasLasMesas.length;
+    },
+
     selectFecha(day) {
       this.fechaSeleccionada = day;
-      // El watch se encarga de llamar a cargarMesas() y cargarReservasDelDia()
     },
+
     seleccionarMesa(mesa) {
-      if (!mesa.disponible || mesa.capacidad < this.personas) return;
+
+      if (!mesa.disponible) return;
+
+      if (mesa.capacidad < this.personas) return;
+
       this.mesaSeleccionada = mesa.idMesa;
     },
 
-    // ─── API calls ─────────────────────────────────────────────────────────────
-
-    /**
-     * Carga TODAS las mesas de la BD.
-     * GET /api/Mesa
-     */
     async cargarMesas() {
+
       this.cargandoMesas = true;
+
       try {
-        const res  = await fetch(`${DAB}/Mesa`);
+
+        const res = await fetch(`${DAB}/Mesa`);
+
         const json = await res.json();
-        // DAB devuelve { value: [...] }
+
         this.todasLasMesas = json.value || [];
+
       } catch (e) {
+
         console.error("Error cargando mesas:", e);
+
         this.todasLasMesas = [];
+
       } finally {
+
         this.cargandoMesas = false;
       }
     },
 
-    /**
-     * Carga las reservas de la fecha seleccionada.
-     * GET /api/Reserva?$filter=fecha eq 'YYYY-MM-DD'
-     */
     async cargarReservasDelDia() {
+
       if (!this.fechaISO) return;
+
       this.cargandoReservas = true;
+
       try {
-        const url  = `${DAB}/Reserva?$filter=fecha eq '${this.fechaISO}'`;
-        const res  = await fetch(url);
+
+        const res = await fetch(`${DAB}/Reserva`);
+
         const json = await res.json();
-        this.reservasDelDia = json.value || [];
+
+        const todas = json.value || [];
+
+        this.reservasDelDia = todas.filter(r => {
+
+          if (!r.fecha) return false;
+
+          const fecha = String(r.fecha).substring(0, 10);
+
+          return fecha === this.fechaISO;
+        });
+
       } catch (e) {
+
         console.error("Error cargando reservas:", e);
+
         this.reservasDelDia = [];
+
       } finally {
+
         this.cargandoReservas = false;
       }
     },
 
-    // ─── Pasos ─────────────────────────────────────────────────────────────────
-    goStep(n) {
-      this.currentStep = n;
-      window.scrollTo({ top: 0, behavior: "smooth" });
+    async cargarReservasMes() {
+
+      try {
+
+        const res = await fetch(`${DAB}/Reserva`);
+
+        const json = await res.json();
+
+        const reservas = json.value || [];
+
+        const cache = {};
+
+        reservas.forEach(r => {
+
+          if (!r.fecha) return;
+
+          const fecha = String(r.fecha).substring(0, 10);
+
+          if (!cache[fecha]) {
+            cache[fecha] = [];
+          }
+
+          cache[fecha].push(r);
+        });
+
+        this.reservasPorFecha = cache;
+
+      } catch (e) {
+
+        console.error("Error cargando reservas mes:", e);
+
+        this.reservasPorFecha = {};
+      }
     },
 
-    // ─── Formateo tarjeta ──────────────────────────────────────────────────────
-    formatCard(e) {
-      let v = e.target.value.replace(/\D/g, "").substring(0, 16);
-      this.pago.numero = v.replace(/(.{4})/g, "$1 ").trim();
+    goStep(n) {
+
+      this.currentStep = n;
+
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
     },
+
+    formatCard(e) {
+
+      let v =
+          e.target.value
+              .replace(/\D/g, "")
+              .substring(0, 16);
+
+      this.pago.numero =
+          v.replace(/(.{4})/g, "$1 ").trim();
+    },
+
     formatExpiry(e) {
-      let v = e.target.value.replace(/\D/g, "").substring(0, 4);
-      if (v.length > 2) v = v.substring(0, 2) + "/" + v.substring(2);
+
+      let v =
+          e.target.value
+              .replace(/\D/g, "")
+              .substring(0, 4);
+
+      if (v.length > 2) {
+        v = v.substring(0, 2) + "/" + v.substring(2);
+      }
+
       this.pago.expiry = v;
     },
+
     formatCardNum(num) {
-      if (!num) return "•••• •••• •••• ••••";
-      const padded = num.replace(/\s/g, "").padEnd(16, "•");
-      return padded.replace(/(.{4})/g, "$1 ").trim();
+
+      if (!num) {
+        return "•••• •••• •••• ••••";
+      }
+
+      const padded =
+          num.replace(/\s/g, "").padEnd(16, "•");
+
+      return padded
+          .replace(/(.{4})/g, "$1 ")
+          .trim();
     },
 
-    // ─── Confirmar reserva → POST a DAB ────────────────────────────────────────
     async confirmarReserva() {
-      this.pagando = true;
-      try {
-        // 1. Validar la mesa elegida para ese día
-        const mesaElegida = this.mesasDisponibles.find(m => m.idMesa === this.mesaSeleccionada);
 
-        if (!mesaElegida || !mesaElegida.disponible || mesaElegida.capacidad < this.personas) {
-          alert("La mesa seleccionada ya no está disponible para ese día.");
-          this.pagando = false;
-          return;
+      this.pagando = true;
+
+      try {
+
+        const mesaElegida =
+            this.mesasDisponibles.find(
+                m => m.idMesa === this.mesaSeleccionada
+            );
+
+        if (!mesaElegida) {
+          throw new Error("Mesa no disponible");
         }
 
-        // 2. Calcular fecha límite de pago (48 h desde ahora)
-        const fechaLimite = new Date();
-        fechaLimite.setHours(fechaLimite.getHours() + 48);
-        const fechaLimiteISO = fechaLimite.toISOString().slice(0, 19).replace("T", " ");
+        const emailUsuario = this.usuarioActual?.email;
 
-        // 3. Construir el body para DAB
+        if (!emailUsuario) {
+          throw new Error("Debes iniciar sesión");
+        }
+
+        const usuarioMySQL =
+            await this.obtenerOCrearUsuarioMySQL(emailUsuario);
+
+        const fechaLimite = new Date();
+
+        fechaLimite.setHours(
+            fechaLimite.getHours() + 48
+        );
+
+        const fechaLimiteISO =
+            fechaLimite
+                .toISOString()
+                .slice(0, 19)
+                .replace("T", " ");
+
         const body = {
-          idUsuario:       this.usuarioActual?.uid ? 1 : 1, // Ajusta con tu lógica de auth real
-          idMesa:          mesaElegida.idMesa,
-          fecha:           this.fechaISO,
-          hora:            "00:00:00",   // Reserva por día completo; se conserva el campo por compatibilidad con DAB
-          numPersonas:     this.personas,
-          estado:          "pendiente",
-          fianza:          this.fianzaTotal,
-          estadoPago:      "pendiente",
-          fechaPago:       null,
-          metodoPago:      this.metodoPago === "bizum" ? "transferencia" : "tarjeta",
-          fechaLimitePago: fechaLimiteISO,
+
+          idUsuario:
+          usuarioMySQL.idUsuario,
+
+          idMesa:
+          mesaElegida.idMesa,
+
+          fecha:
+          this.fechaISO,
+
+          hora:
+              "20:00:00",
+
+          numPersonas:
+          this.personas,
+
+          estado:
+              "pendiente",
+
+          fianza:
+          this.fianzaTotal,
+
+          estadoPago:
+              "pendiente",
+
+          fechaPago:
+              null,
+
+          metodoPago:
+              this.metodoPago === "bizum"
+                  ? "transferencia"
+                  : "tarjeta",
+
+          fechaLimitePago:
+          fechaLimiteISO,
         };
 
-        // 4. POST a DAB
+        console.log("[POST Reserva]", body);
+
         const res = await fetch(`${DAB}/Reserva`, {
-          method:  "POST",
-          headers: { "Content-Type": "application/json" },
-          body:    JSON.stringify(body),
+
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json",
+          },
+
+          body: JSON.stringify(body),
         });
 
         if (!res.ok) {
-          const err = await res.text();
-          throw new Error(`DAB error ${res.status}: ${err}`);
+
+          const txt = await res.text();
+
+          throw new Error(txt);
         }
 
         const data = await res.json();
-        // DAB devuelve el registro creado en data.value[0] o directamente en data
-        const reservaCreada = data.value?.[0] || data;
 
-        // Recargar reservas para actualizar disponibilidad
+        const reservaCreada =
+            data.value?.[0] || data;
+
+        // Recargar
         await this.cargarReservasDelDia();
+        await this.cargarReservasMes();
 
-        // Generar referencia visual
-        this.referencia = "LB" + String(reservaCreada.idReserva || Date.now()).slice(-6).toUpperCase();
+        this.referencia =
+            "LB" +
+            String(
+                reservaCreada.idReserva || Date.now()
+            )
+                .slice(-6)
+                .toUpperCase();
 
         this.currentStep = 4;
 
-        window.scrollTo({ top: 0, behavior: "smooth" });
-
       } catch (e) {
-        console.error("Error al confirmar reserva:", e);
-        alert("Hubo un problema al guardar la reserva. Inténtalo de nuevo.");
+
+        console.error("Error reserva:", e);
+
+        alert(e.message);
+
       } finally {
+
         this.pagando = false;
       }
     },
 
+    async obtenerOCrearUsuarioMySQL(emailUsuario) {
+
+      const usuarioRes =
+          await fetch(`${DAB}/Usuario`);
+
+      if (!usuarioRes.ok) {
+        throw new Error("No se pudieron cargar los usuarios");
+      }
+
+      const usuarioJson =
+          await usuarioRes.json();
+
+      const usuarios =
+          usuarioJson.value || [];
+
+      const usuarioExistente =
+          usuarios.find(
+              u =>
+                  u.email?.toLowerCase() ===
+                  emailUsuario.toLowerCase()
+          );
+
+      if (usuarioExistente?.idUsuario) {
+        await this.obtenerOCrearClienteMySQL(usuarioExistente.idUsuario);
+        return usuarioExistente;
+      }
+
+      const partesNombre =
+          this.contacto.nombre
+              .trim()
+              .split(/\s+/);
+
+      const nombre =
+          partesNombre.shift() ||
+          this.usuarioActual?.displayName ||
+          emailUsuario.split("@")[0];
+
+      const apellido =
+          partesNombre.join(" ") || "";
+
+      const nuevoUsuario = {
+        nombre,
+        apellido,
+        email: emailUsuario,
+        "contraseña": "firebase",
+        rol: "cliente",
+      };
+
+      const crearRes =
+          await fetch(`${DAB}/Usuario`, {
+
+            method: "POST",
+
+            headers: {
+              "Content-Type": "application/json",
+            },
+
+            body: JSON.stringify(nuevoUsuario),
+          });
+
+      if (!crearRes.ok) {
+
+        const txt =
+            await crearRes.text();
+
+        throw new Error(txt || "No se pudo crear el usuario en MySQL");
+      }
+
+      const creadoJson =
+          await crearRes.json();
+
+      const usuarioCreado =
+          creadoJson.value?.[0] || creadoJson;
+
+      if (!usuarioCreado?.idUsuario) {
+        throw new Error("Usuario creado sin idUsuario");
+      }
+
+      await this.obtenerOCrearClienteMySQL(usuarioCreado.idUsuario);
+
+      return usuarioCreado;
+    },
+
+    async obtenerOCrearClienteMySQL(idUsuario) {
+
+      const clienteRes =
+          await fetch(`${DAB}/Cliente`);
+
+      if (!clienteRes.ok) {
+        throw new Error("No se pudieron cargar los clientes");
+      }
+
+      const clienteJson =
+          await clienteRes.json();
+
+      const clientes =
+          clienteJson.value || [];
+
+      const clienteExistente =
+          clientes.find(c => c.idUsuario === idUsuario);
+
+      if (clienteExistente) {
+        return clienteExistente;
+      }
+
+      const nuevoCliente = {
+        idUsuario,
+        telefono: this.contacto.telefono || null,
+        direccion: null,
+      };
+
+      const crearClienteRes =
+          await fetch(`${DAB}/Cliente`, {
+
+            method: "POST",
+
+            headers: {
+              "Content-Type": "application/json",
+            },
+
+            body: JSON.stringify(nuevoCliente),
+          });
+
+      if (!crearClienteRes.ok) {
+
+        const txt =
+            await crearClienteRes.text();
+
+        throw new Error(txt || "No se pudo crear el cliente en MySQL");
+      }
+
+      const creadoJson =
+          await crearClienteRes.json();
+
+      return creadoJson.value?.[0] || creadoJson;
+    },
+
     nuevaReserva() {
-      this.currentStep       = 1;
+
+      this.currentStep = 1;
+
       this.fechaSeleccionada = null;
-      this.mesaSeleccionada  = null;
-      this.personas          = 2;
-      this.ubicacion         = "interior";
-      this.reservasDelDia    = [];
-      this.contacto = { nombre: "", telefono: "", email: "", peticiones: "" };
-      this.pago     = { numero: "", titular: "", expiry: "", cvv: "", bizumTel: "" };
+
+      this.mesaSeleccionada = null;
+
+      this.personas = 2;
+
+      this.ubicacion = "interior";
+
+      this.reservasDelDia = [];
+
+      this.contacto = {
+        nombre: "",
+        telefono: "",
+        email: "",
+        peticiones: "",
+      };
+
+      this.contactoBloqueado = {
+        nombre: false,
+        telefono: false,
+        email: false,
+      };
+
+      this.autocompletarContacto();
+
+      this.pago = {
+        numero: "",
+        titular: "",
+        expiry: "",
+        cvv: "",
+        bizumTel: "",
+      };
+
       this.metodoPago = "tarjeta";
-      window.scrollTo({ top: 0, behavior: "smooth" });
+
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
     },
   },
 };
 </script>
-
 <style scoped>
 @import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&display=swap");
 
