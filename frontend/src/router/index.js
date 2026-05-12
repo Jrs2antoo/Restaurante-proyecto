@@ -5,6 +5,7 @@ import CatalogoPage from "@/components/CatalogoPage.vue";
 import LoginPage from "@/components/LoginPage.vue";
 import RegisterPage from "@/components/RegisterPage.vue";
 import AdministracionPage from "@/components/AdministracionPage.vue";
+import ReservasPage from "@/components/ReservasPage.vue";
 
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
@@ -32,6 +33,11 @@ const router = createRouter({
         {
             path: "/administracion",
             component: AdministracionPage,
+            meta: { requireAuth: true, onlyAdmin: true },
+        },
+        {
+            path: "/reservas",
+            component: ReservasPage,
             meta: { requireAuth: true, onlyAdmin: true },
         },
     ],

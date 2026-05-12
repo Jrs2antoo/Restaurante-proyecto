@@ -14,11 +14,21 @@
           <button class="nav-user-btn" @click="toggleMenu">
             <span class="nav-user-avatar">{{ inicialUsuario }}</span>
             <span class="nav-user-name">{{ nombreUsuario }}</span>
-            <span class="nav-user-chevron" :class="{ open: menuAbierto }">▾</span>
+            <span class="nav-user-chevron" :class="{ open: menuAbierto }"
+              >▾</span
+            >
           </button>
           <div v-if="menuAbierto" class="nav-dropdown">
-            <RouterLink v-if="esAdmin" to="/administracion" class="nav-dropdown-item" @click="menuAbierto = false">⚙️ Administración</RouterLink>
-            <button class="nav-dropdown-item nav-logout" @click="cerrarSesion">🚪 Cerrar sesión</button>
+            <RouterLink
+              v-if="esAdmin"
+              to="/administracion"
+              class="nav-dropdown-item"
+              @click="menuAbierto = false"
+              >⚙️ Administración</RouterLink
+            >
+            <button class="nav-dropdown-item nav-logout" @click="cerrarSesion">
+              🚪 Cerrar sesión
+            </button>
           </div>
         </li>
       </ul>
@@ -91,36 +101,36 @@
       <div class="gallery-grid reveal" style="transition-delay: 0.1s">
         <div class="gallery-item g1">
           <img
-              src="https://images.unsplash.com/photo-1552566626-52f8b828add9?w=900&auto=format&fit=crop&q=80"
-              alt="Sala principal del restaurante"
+            src="https://images.unsplash.com/photo-1552566626-52f8b828add9?w=900&auto=format&fit=crop&q=80"
+            alt="Sala principal del restaurante"
           />
           <div class="gallery-overlay"><span>Sala principal</span></div>
         </div>
         <div class="gallery-item g2">
           <img
-              src="https://images.unsplash.com/photo-1600891964092-4316c288032e?w=600&auto=format&fit=crop&q=80"
-              alt="Plato estrella"
+            src="https://images.unsplash.com/photo-1600891964092-4316c288032e?w=600&auto=format&fit=crop&q=80"
+            alt="Plato estrella"
           />
           <div class="gallery-overlay"><span>Plato estrella</span></div>
         </div>
         <div class="gallery-item g3">
           <img
-              src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=700&auto=format&fit=crop&q=80"
-              alt="Interior acogedor"
+            src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=700&auto=format&fit=crop&q=80"
+            alt="Interior acogedor"
           />
           <div class="gallery-overlay"><span>Interior</span></div>
         </div>
         <div class="gallery-item g4">
           <img
-              src="https://images.unsplash.com/photo-1559339352-11d035aa65de?w=600&auto=format&fit=crop&q=80"
-              alt="Barra y coctelería"
+            src="https://images.unsplash.com/photo-1559339352-11d035aa65de?w=600&auto=format&fit=crop&q=80"
+            alt="Barra y coctelería"
           />
           <div class="gallery-overlay"><span>Barra</span></div>
         </div>
         <div class="gallery-item g5">
           <img
-              src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=900&auto=format&fit=crop&q=80"
-              alt="Alta cocina"
+            src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=900&auto=format&fit=crop&q=80"
+            alt="Alta cocina"
           />
           <div class="gallery-overlay"><span>Alta cocina</span></div>
         </div>
@@ -218,15 +228,15 @@ onMounted(() => {
 
   const revealEls = document.querySelectorAll(".reveal");
   const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) {
-            e.target.classList.add("visible");
-            io.unobserve(e.target);
-          }
-        });
-      },
-      { threshold: 0.12 },
+    (entries) => {
+      entries.forEach((e) => {
+        if (e.isIntersecting) {
+          e.target.classList.add("visible");
+          io.unobserve(e.target);
+        }
+      });
+    },
+    { threshold: 0.12 },
   );
   revealEls.forEach((el) => io.observe(el));
 });
@@ -281,8 +291,8 @@ nav {
   padding: 0 5vw;
   height: 72px;
   transition:
-      background 0.4s,
-      box-shadow 0.4s;
+    background 0.4s,
+    box-shadow 0.4s;
 }
 nav.scrolled {
   background: rgba(26, 20, 16, 0.96);
@@ -304,6 +314,7 @@ nav.scrolled {
   display: flex;
   gap: 2.4rem;
   list-style: none;
+  align-items: center;
 }
 .nav-links a {
   font-size: 0.72rem;
@@ -339,8 +350,8 @@ nav.scrolled {
   border-radius: 2px;
   font-weight: 600 !important;
   transition:
-      background 0.3s,
-      transform 0.2s !important;
+    background 0.3s,
+    transform 0.2s !important;
 }
 .nav-btn:hover {
   background: #e0aa45 !important;
@@ -368,7 +379,9 @@ nav.scrolled {
   font-family: inherit;
   font-size: 0.85rem;
   font-weight: 500;
-  transition: background 0.2s, color 0.2s;
+  transition:
+    background 0.2s,
+    color 0.2s;
 }
 
 .nav-user-btn:hover {
@@ -429,7 +442,7 @@ nav.scrolled {
   background: #faf6ef;
   border: 1px solid #d9cfc2;
   border-radius: 12px;
-  box-shadow: 0 12px 32px rgba(0,0,0,0.22);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
   min-width: 200px;
   overflow: hidden;
   z-index: 200;
@@ -489,7 +502,7 @@ nav.scrolled {
   position: absolute;
   inset: 0;
   background: url("https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1600&auto=format&fit=crop&q=80")
-  center/cover no-repeat;
+    center/cover no-repeat;
   transform: scale(1.08);
   animation: kenBurns 18s ease-in-out infinite alternate;
 }
@@ -505,10 +518,10 @@ nav.scrolled {
   position: absolute;
   inset: 0;
   background: linear-gradient(
-      160deg,
-      rgba(26, 20, 16, 0.72) 0%,
-      rgba(26, 20, 16, 0.45) 60%,
-      rgba(107, 76, 42, 0.3) 100%
+    160deg,
+    rgba(26, 20, 16, 0.72) 0%,
+    rgba(26, 20, 16, 0.45) 60%,
+    rgba(107, 76, 42, 0.3) 100%
   );
 }
 .hero-content {
@@ -570,8 +583,8 @@ nav.scrolled {
   text-transform: uppercase;
   font-weight: 500;
   transition:
-      background 0.3s,
-      color 0.3s;
+    background 0.3s,
+    color 0.3s;
   animation: fadeUp 1.1s 0.6s ease both;
 }
 .hero-cta:hover {
@@ -650,9 +663,9 @@ section {
   height: 320px;
   border-radius: 50%;
   background: radial-gradient(
-      circle,
-      rgba(201, 150, 58, 0.12) 0%,
-      transparent 70%
+    circle,
+    rgba(201, 150, 58, 0.12) 0%,
+    transparent 70%
   );
 }
 .why-inner {
@@ -693,9 +706,9 @@ section {
   border-radius: 4px;
   padding: 2rem 1.6rem;
   transition:
-      border-color 0.3s,
-      background 0.3s,
-      transform 0.3s;
+    border-color 0.3s,
+    background 0.3s,
+    transform 0.3s;
   cursor: default;
 }
 .why-card:hover {
@@ -802,9 +815,9 @@ section {
   position: absolute;
   inset: 0;
   background: linear-gradient(
-      to top,
-      rgba(26, 20, 16, 0.55) 0%,
-      transparent 50%
+    to top,
+    rgba(26, 20, 16, 0.55) 0%,
+    transparent 50%
   );
   opacity: 0;
   transition: opacity 0.4s;
@@ -852,8 +865,8 @@ footer {
   opacity: 0;
   transform: translateY(28px);
   transition:
-      opacity 0.7s ease,
-      transform 0.7s ease;
+    opacity 0.7s ease,
+    transform 0.7s ease;
 }
 .reveal.visible {
   opacity: 1;
@@ -890,5 +903,4 @@ footer {
     grid-template-columns: 1fr;
   }
 }
-
 </style>
