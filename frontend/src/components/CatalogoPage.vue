@@ -1,54 +1,16 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from "vue";
-import { RouterLink, useRouter } from "vue-router";
-import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
+import { computed, onMounted, ref } from "vue";
+import Cabecera from "./Cabecera.vue";
+import Footer from "./Footer.vue";
 
 const API = "/api";
 
-const router = useRouter();
-const auth = getAuth();
-
-const isScrolled = ref(false);
-const usuarioActual = ref(null);
-const menuAbierto = ref(false);
 const categoriaActiva = ref("Todo");
 const busqueda = ref("");
-
 const cargando = ref(true);
 const error = ref(null);
-
-const ADMIN_ID = "0zqRdP39nXRgH7Cl3ukyjEqEy6v2";
-
 const categorias = ref(["Todo"]);
 const platos = ref([]);
-
-let unsubscribeAuth = null;
-
-const esAdmin = computed(() => usuarioActual.value?.uid === ADMIN_ID);
-
-const nombreUsuario = computed(() => {
-  const u = usuarioActual.value;
-  if (!u) return "";
-  return u.displayName || u.email?.split("@")[0] || "Usuario";
-});
-
-const inicialUsuario = computed(() =>
-  nombreUsuario.value.charAt(0).toUpperCase(),
-);
-
-const toggleMenu = () => {
-  menuAbierto.value = !menuAbierto.value;
-};
-
-const handleClickFuera = (e) => {
-  if (!e.target.closest(".nav-user-menu")) {
-    menuAbierto.value = false;
-  }
-};
-
-const handleScroll = () => {
-  isScrolled.value = window.scrollY > 40;
-};
 
 const cargarProductos = async () => {
   const res = await fetch(
@@ -118,68 +80,14 @@ const platosFiltrados = computed(() => {
   });
 });
 
-const cerrarSesion = async () => {
-  menuAbierto.value = false;
-  await signOut(auth);
-  router.push("/login");
-};
-
 onMounted(() => {
-  window.addEventListener("scroll", handleScroll);
-  document.addEventListener("click", handleClickFuera);
-
-  unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-    usuarioActual.value = user;
-  });
-
   cargarDatos();
-});
-
-onUnmounted(() => {
-  window.removeEventListener("scroll", handleScroll);
-  document.removeEventListener("click", handleClickFuera);
-
-  if (unsubscribeAuth) unsubscribeAuth();
 });
 </script>
 
 <template>
   <div id="catalogo-app">
-    <nav :class="{ scrolled: isScrolled }">
-      <RouterLink to="/" class="nav-logo">La <span>Brasa</span></RouterLink>
-
-      <ul class="nav-links">
-        <li><RouterLink to="/">Inicio</RouterLink></li>
-        <li><RouterLink to="/catalogo">Menú</RouterLink></li>
-        <li><RouterLink to="/reservas">Reservas</RouterLink></li>
-
-        <li v-if="!usuarioActual">
-          <RouterLink to="/login" class="nav-btn"> Iniciar Sesión </RouterLink>
-        </li>
-
-        <li v-else class="nav-user-menu">
-          <button class="nav-user-btn" @click="toggleMenu">
-            <span class="nav-user-avatar">{{ inicialUsuario }}</span>
-            <span class="nav-user-name">{{ nombreUsuario }}</span>
-            <span class="nav-user-chevron" :class="{ open: menuAbierto }"
-              >▾</span
-            >
-          </button>
-          <div v-if="menuAbierto" class="nav-dropdown">
-            <RouterLink
-              v-if="esAdmin"
-              to="/administracion"
-              class="nav-dropdown-item"
-              @click="menuAbierto = false"
-              >⚙️ Administración</RouterLink
-            >
-            <button class="nav-dropdown-item nav-logout" @click="cerrarSesion">
-              🚪 Cerrar sesión
-            </button>
-          </div>
-        </li>
-      </ul>
-    </nav>
+    <Cabecera />
 
     <header class="catalogo-header">
       <div class="catalogo-header-bg"></div>
@@ -242,7 +150,7 @@ onUnmounted(() => {
             <span v-if="plato.popular" class="badge badge-popular">
               ⭐ Popular
             </span>
-            <span v-if="plato.nuevo" class="badge badge-nuevo"> ✦ Nuevo </span>
+            <span v-if="plato.nuevo" class="badge badge-nuevo">✦ Nuevo</span>
           </div>
 
           <div class="plato-body">
@@ -265,10 +173,7 @@ onUnmounted(() => {
       </div>
     </section>
 
-    <footer>
-      <div class="footer-logo">La <span>Brasa</span></div>
-      <p class="footer-copy">© 2026 La Brasa Restaurante · Granada</p>
-    </footer>
+    <Footer />
   </div>
 </template>
 
@@ -283,189 +188,21 @@ onUnmounted(() => {
   box-sizing: border-box;
 }
 
-:root {
+#catalogo-app {
   --cream: #f5f0e8;
   --dark: #1a1410;
   --brown: #6b4c2a;
   --gold: #c9963a;
   --warm: #e8ddd0;
   --text: #2d2520;
-}
 
-#catalogo-app {
   font-family: "Montserrat", sans-serif;
   background: var(--cream);
   color: var(--text);
   min-height: 100vh;
 }
 
-/* resto de tu CSS exactamente igual */
-
-/* ─── NAVBAR ─── */
-nav {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 5vw;
-  height: 72px;
-  background: rgba(26, 20, 16, 0.55);
-  transition:
-    background 0.4s,
-    box-shadow 0.4s;
-}
-nav.scrolled {
-  background: rgba(26, 20, 16, 0.96);
-  box-shadow: 0 2px 24px rgba(0, 0, 0, 0.3);
-}
-.nav-logo {
-  font-family: "Cormorant Garamond", serif;
-  font-size: 1.7rem;
-  font-weight: 600;
-  color: var(--cream);
-  letter-spacing: 0.06em;
-  text-decoration: none;
-}
-.nav-logo span {
-  color: var(--gold);
-  font-style: italic;
-}
-.nav-links {
-  display: flex;
-  gap: 2.4rem;
-  list-style: none;
-  align-items: center;
-}
-.nav-links a {
-  font-size: 0.72rem;
-  font-weight: 500;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--cream);
-  text-decoration: none;
-  position: relative;
-  padding-bottom: 4px;
-  transition: color 0.3s;
-}
-.nav-links a::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 0;
-  height: 1px;
-  background: var(--gold);
-  transition: width 0.3s;
-}
-.nav-links a:hover,
-.nav-links a.nav-active {
-  color: var(--gold);
-}
-.nav-links a.nav-active::after,
-.nav-links a:hover::after {
-  width: 100%;
-}
-.nav-btn {
-  border: 1px solid rgba(201, 150, 58, 0.6);
-  padding: 8px 20px;
-  border-radius: 2px;
-  transition:
-    background 0.3s,
-    color 0.3s,
-    border-color 0.3s;
-}
-.nav-btn:hover {
-  background: var(--gold) !important;
-  border-color: var(--gold) !important;
-  color: var(--dark) !important;
-}
-.nav-user-menu {
-  position: relative;
-}
-.nav-user-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(26, 20, 16, 0.55);
-  border: 1.5px solid var(--gold);
-  border-radius: 999px;
-  padding: 6px 14px 6px 6px;
-  cursor: pointer;
-  color: #f5f0e8;
-  font-family: inherit;
-  font-size: 0.85rem;
-  font-weight: 500;
-  transition:
-    background 0.2s,
-    color 0.2s;
-}
-.nav-user-btn:hover {
-  background: var(--gold);
-  color: var(--dark);
-}
-.nav-user-avatar {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: var(--gold);
-  color: var(--dark);
-  font-weight: 600;
-  font-size: 0.72rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.nav-user-chevron {
-  font-size: 0.75rem;
-  opacity: 0.7;
-  transition: transform 0.25s;
-}
-.nav-user-chevron.open {
-  transform: rotate(180deg);
-}
-.nav-dropdown {
-  position: absolute;
-  top: calc(100% + 12px);
-  right: 0;
-  background: #faf6ef;
-  border: 1px solid #d9cfc2;
-  border-radius: 12px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
-  min-width: 200px;
-  overflow: hidden;
-  z-index: 200;
-}
-.nav-dropdown-item {
-  display: block;
-  width: 100%;
-  padding: 12px 18px;
-  font-family: "Montserrat", sans-serif;
-  font-size: 0.7rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--cream);
-  text-decoration: none;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  text-align: left;
-  transition:
-    background 0.2s,
-    color 0.2s;
-}
-.nav-dropdown-item:hover {
-  background: rgba(201, 150, 58, 0.12);
-  color: var(--gold);
-}
-.nav-logout {
-  border-top: 1px solid rgba(201, 150, 58, 0.15);
-}
-
-/* ─── HEADER ─── */
+/* HEADER */
 .catalogo-header {
   position: relative;
   height: 52vh;
@@ -538,7 +275,7 @@ nav.scrolled {
   line-height: 1.8;
 }
 
-/* ─── FILTROS ─── */
+/* FILTROS */
 .filtros-section {
   background: var(--dark);
   padding: 2rem 5vw;
@@ -615,7 +352,7 @@ nav.scrolled {
   border-color: var(--gold);
 }
 
-/* ─── PLATOS ─── */
+/* PLATOS */
 .platos-section {
   padding: 4rem 5vw 6rem;
 }
@@ -627,6 +364,7 @@ nav.scrolled {
   gap: 2rem;
 }
 .plato-card {
+  position: relative;
   background: #fff;
   border-radius: 4px;
   overflow: hidden;
@@ -639,20 +377,6 @@ nav.scrolled {
 .plato-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 16px 48px rgba(26, 20, 16, 0.12);
-}
-.plato-img-wrap {
-  position: relative;
-  height: 210px;
-  overflow: hidden;
-}
-.plato-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.5s ease;
-}
-.plato-card:hover .plato-img {
-  transform: scale(1.06);
 }
 .plato-badges {
   position: absolute;
@@ -718,7 +442,7 @@ nav.scrolled {
   color: var(--brown);
 }
 
-/* ─── VACÍO ─── */
+/* VACÍO */
 .vacio {
   grid-column: 1 / -1;
   text-align: center;
@@ -734,7 +458,7 @@ nav.scrolled {
   letter-spacing: 0.08em;
 }
 
-/* ─── CARGA / ERROR ─── */
+/* CARGA / ERROR */
 .estado-carga,
 .estado-error {
   display: flex;
@@ -785,31 +509,7 @@ nav.scrolled {
   color: var(--dark);
 }
 
-/* ─── FOOTER ─── */
-footer {
-  background: var(--dark);
-  padding: 2.5rem 5vw;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.footer-logo {
-  font-family: "Cormorant Garamond", serif;
-  font-size: 1.3rem;
-  color: var(--cream);
-  font-weight: 400;
-}
-.footer-logo span {
-  color: var(--gold);
-  font-style: italic;
-}
-.footer-copy {
-  font-size: 0.68rem;
-  color: rgba(245, 240, 232, 0.35);
-  letter-spacing: 0.08em;
-}
-
-/* ─── RESPONSIVE ─── */
+/* RESPONSIVE */
 @media (max-width: 700px) {
   .filtros-inner {
     flex-direction: column;
@@ -817,9 +517,6 @@ footer {
   }
   .busqueda-input {
     width: 100%;
-  }
-  .nav-links {
-    gap: 1.2rem;
   }
 }
 </style>

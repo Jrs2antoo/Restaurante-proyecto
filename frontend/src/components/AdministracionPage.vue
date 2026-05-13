@@ -1,7 +1,7 @@
 <template>
   <div class="admin-container">
     <aside class="admin-sidebar">
-      <div class="sidebar-logo">La <span>Brasa</span></div>
+      <RouterLink to="/" class="nav-logo">La <span>Brasa</span></RouterLink>
       <nav class="sidebar-nav">
         <button :class="{ active: currentTab === 'usuarios' }" @click="currentTab = 'usuarios'">👤 Usuarios</button>
         <button :class="{ active: currentTab === 'productos' }" @click="currentTab = 'productos'">🍽️ Productos</button>

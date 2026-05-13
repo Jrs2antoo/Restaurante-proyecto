@@ -1,28 +1,7 @@
 <template>
   <div id="app">
     <!-- NAVBAR -->
-    <nav :class="{ scrolled: isScrolled }">
-      <RouterLink to="/" class="nav-logo">La <span>Brasa</span></RouterLink>
-      <ul class="nav-links">
-        <li><RouterLink to="/">Inicio</RouterLink></li>
-        <li><RouterLink to="/catalogo">Menú</RouterLink></li>
-        <li><RouterLink to="/reservas" class="active">Reservas</RouterLink></li>
-        <li v-if="!usuarioActual">
-          <RouterLink to="/login" class="nav-btn">Iniciar Sesión</RouterLink>
-        </li>
-        <li v-else class="nav-user-menu">
-          <button class="nav-user-btn" @click="toggleMenu">
-            <span class="nav-user-avatar">{{ inicialUsuario }}</span>
-            <span class="nav-user-name">{{ nombreUsuario }}</span>
-            <span class="nav-user-chevron" :class="{ open: menuAbierto }">▾</span>
-          </button>
-          <div v-if="menuAbierto" class="nav-dropdown">
-            <RouterLink v-if="esAdmin" to="/administracion" class="nav-dropdown-item" @click="menuAbierto = false">⚙️ Administración</RouterLink>
-            <button class="nav-dropdown-item nav-logout" @click="cerrarSesion">🚪 Cerrar sesión</button>
-          </div>
-        </li>
-      </ul>
-    </nav>
+    <Cabecera />
 
     <!-- HERO RESERVAS -->
     <section class="reservas-hero">
@@ -442,30 +421,26 @@
     </section>
 
     <!-- FOOTER -->
-    <footer class="footer">
-      <div class="footer-inner">
-        <div class="footer-logo">La <span>Brasa</span></div>
-        <p class="footer-copy">© 2025 La Brasa · Granada · Todos los derechos reservados</p>
-      </div>
-    </footer>
+    <Footer />
   </div>
 </template>
 
 <script>
-import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+import Cabecera from "./Cabecera.vue";
+import Footer from "./Footer.vue";
 
 const DAB = "/api";
 
 export default {
   name: "ReservasPage",
+  components: { Cabecera, Footer },
 
   data() {
     const hoy = new Date();
 
     return {
-      isScrolled: false,
       usuarioActual: null,
-      menuAbierto: false,
 
       currentStep: 1,
       steps: ["Disponibilidad", "Tus datos", "Pago"],
@@ -535,20 +510,6 @@ export default {
   },
 
   computed: {
-
-    inicialUsuario() {
-      return this.usuarioActual?.displayName?.charAt(0).toUpperCase() || "U";
-    },
-
-    nombreUsuario() {
-      return this.usuarioActual?.displayName ||
-          this.usuarioActual?.email ||
-          "Usuario";
-    },
-
-    esAdmin() {
-      return this.usuarioActual?.uid === "0zqRdP39nXRgH7Cl3ukyjEqEy6v2";
-    },
 
     anioActual() {
       return this.mesVista.getFullYear();
@@ -751,35 +712,13 @@ export default {
       await this.autocompletarContacto();
     });
 
-    window.addEventListener("scroll", this.handleScroll);
-
     Promise.all([
       this.cargarMesas(),
       this.cargarReservasMes(),
     ]);
   },
 
-  beforeUnmount() {
-    window.removeEventListener("scroll", this.handleScroll);
-  },
-
   methods: {
-
-    handleScroll() {
-      this.isScrolled = window.scrollY > 50;
-    },
-
-    toggleMenu() {
-      this.menuAbierto = !this.menuAbierto;
-    },
-
-    async cerrarSesion() {
-
-      await signOut(getAuth());
-
-      this.$router.push("/login");
-    },
-
     async autocompletarContacto() {
 
       const emailUsuario =
@@ -1400,79 +1339,6 @@ export default {
   min-height: 100vh;
 }
 
-/* ─── NAVBAR ─── */
-nav {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1.4rem 5vw;
-  transition: background 0.4s, padding 0.4s;
-}
-nav.scrolled {
-  background: rgba(26, 20, 16, 0.96);
-  backdrop-filter: blur(12px);
-  padding: 0.9rem 5vw;
-}
-.nav-logo {
-  font-family: "Cormorant Garamond", serif;
-  font-size: 1.5rem;
-  font-weight: 400;
-  color: var(--cream);
-  text-decoration: none;
-  letter-spacing: 0.04em;
-}
-.nav-logo span { color: var(--gold); }
-.nav-links { display: flex; align-items: center; gap: 2.4rem; list-style: none; }
-.nav-links a {
-  color: rgba(245, 240, 232, 0.75);
-  text-decoration: none;
-  font-size: 0.72rem;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  font-weight: 400;
-  transition: color 0.2s;
-}
-.nav-links a:hover, .nav-links a.active { color: var(--gold); }
-.nav-btn {
-  border: 1.5px solid rgba(201, 150, 58, 0.5);
-  padding: 7px 20px;
-  color: var(--cream) !important;
-  transition: border-color 0.2s, background 0.2s !important;
-}
-.nav-btn:hover { border-color: var(--gold); background: rgba(201, 150, 58, 0.1); }
-.nav-user-menu { position: relative; }
-.nav-user-btn {
-  display: flex; align-items: center; gap: 8px;
-  background: none; border: none; cursor: pointer; color: var(--cream);
-  font-family: "Jost", sans-serif; font-size: 0.8rem;
-}
-.nav-user-avatar {
-  width: 30px; height: 30px; border-radius: 50%; background: var(--gold);
-  color: var(--dark); display: flex; align-items: center; justify-content: center;
-  font-weight: 600; font-size: 0.75rem;
-}
-.nav-user-name { font-size: 0.72rem; letter-spacing: 0.1em; }
-.nav-user-chevron { font-size: 0.9rem; transition: transform 0.2s; }
-.nav-user-chevron.open { transform: rotate(180deg); }
-.nav-dropdown {
-  position: absolute; top: calc(100% + 10px); right: 0;
-  background: #23180f; border: 1px solid rgba(201, 150, 58, 0.2);
-  min-width: 180px; border-radius: 4px; overflow: hidden;
-}
-.nav-dropdown-item {
-  display: block; width: 100%; padding: 12px 16px;
-  color: var(--cream); text-decoration: none; font-size: 0.8rem;
-  background: none; border: none; cursor: pointer; text-align: left;
-  transition: background 0.2s;
-}
-.nav-dropdown-item:hover { background: rgba(201, 150, 58, 0.12); }
-.nav-logout { color: #e08080 !important; }
-
 /* ─── HERO ─── */
 .reservas-hero {
   position: relative;
@@ -2004,13 +1870,6 @@ nav.scrolled {
 .step-fade-enter-from { opacity: 0; transform: translateX(20px); }
 .step-fade-leave-to { opacity: 0; transform: translateX(-20px); }
 
-/* ─── FOOTER ─── */
-.footer { background: var(--dark); padding: 2rem 5vw; }
-.footer-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
-.footer-logo { font-family: "Cormorant Garamond", serif; font-size: 1.3rem; color: var(--cream); }
-.footer-logo span { color: var(--gold); }
-.footer-copy { font-size: 0.7rem; color: rgba(245,240,232,0.3); letter-spacing: 0.1em; }
-
 /* ─── RESPONSIVE ─── */
 @media (max-width: 700px) {
   .form-grid { grid-template-columns: 1fr; }
@@ -2020,7 +1879,6 @@ nav.scrolled {
   .metodos-pago { grid-template-columns: 1fr; }
   .horarios-grid { grid-template-columns: repeat(4, 1fr); }
   .confirmacion-actions { flex-direction: column; align-items: center; }
-  .footer-inner { flex-direction: column; gap: 0.8rem; text-align: center; }
   .steps-bar { gap: 0; }
   .step-label { display: none; }
 }

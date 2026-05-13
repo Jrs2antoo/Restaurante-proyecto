@@ -6,6 +6,7 @@ import LoginPage from "@/components/LoginPage.vue";
 import RegisterPage from "@/components/RegisterPage.vue";
 import AdministracionPage from "@/components/AdministracionPage.vue";
 import ReservasPage from "@/components/ReservasPage.vue";
+import MisReservasPage from "@/components/MisReservasPage.vue";
 
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
@@ -38,7 +39,12 @@ const router = createRouter({
         {
             path: "/reservas",
             component: ReservasPage,
-            meta: { requireAuth: true, onlyAdmin: true },
+            meta: { requireAuth: true, onlyAdmin: false },
+        },
+        {
+            path: "/mis-reservas",
+            component: MisReservasPage,
+            meta: { requireAuth: true, onlyAdmin: false },
         },
     ],
 });
