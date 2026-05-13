@@ -536,6 +536,19 @@ const handleLogout = () => {
 <style scoped>
 @import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Montserrat:wght@400;600&display=swap");
 
+.nav-logo {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 1.7rem;
+  font-weight: 600;
+  color: var(--cream, #f5f0e8);
+  letter-spacing: 0.06em;
+  text-decoration: none;
+}
+
+.nav-logo span {
+  color: var(--gold, #c9963a);
+  font-style: italic;
+}
 /* ── RESET TOTAL SCOPED ── */
 .admin-container { all: initial; }
 
