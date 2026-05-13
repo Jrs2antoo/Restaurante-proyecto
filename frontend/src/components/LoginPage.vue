@@ -1,56 +1,97 @@
 <script setup>
 import { Icon } from '@iconify/vue'
-import { reactive } from 'vue'
-import { RouterLink } from 'vue-router'
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
-import { getAuth, signInWithEmailAndPassword, GoogleAuthProvider, FacebookAuthProvider, TwitterAuthProvider, signInWithPopup } from 'firebase/auth'
+import { ref } from 'vue'
+import { RouterLink, useRouter } from 'vue-router'
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  GoogleAuthProvider,
+  FacebookAuthProvider,
+  TwitterAuthProvider,
+  signInWithPopup,
+} from 'firebase/auth'
 
-const email = ref("");
-const password = ref("");
-const error = ref("");
-const router = useRouter();
-const auth = getAuth();
+const email = ref('')
+const password = ref('')
+const error = ref('')
+const router = useRouter()
+const auth = getAuth()
 
+// ── Guarda el usuario en MySQL vía DAB (ignora duplicados) ──
+async function saveUserToDb(nombre, userEmail, passwordHash = 'firebase-auth') {
+  if (!userEmail) {
+    console.warn('saveUserToDb: email vacío, se omite')
+    return
+  }
+  try {
+    const payload = {
+      nombre: nombre || '',
+      apellido: '',
+      email: userEmail,
+      contraseña: passwordHash,
+      rol: 'cliente'
+    }
+    console.log('saveUserToDb: enviando →', payload)
+
+    const res = await fetch('http://localhost:5000/api/Usuario', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+
+    const body = await res.text()
+    console.log('saveUserToDb: respuesta →', res.status, body)
+
+    // 409 Conflict = ya existe, no es error crítico
+    if (!res.ok && res.status !== 409) {
+      console.error('saveUserToDb: error del servidor', res.status, body)
+    }
+  } catch (e) {
+    console.error('saveUserToDb: error de red', e)
+  }
+}
+
+// Login con email/contraseña — aquí NO guardamos porque el usuario
+// ya existe en la BD desde el registro. Solo guardamos en social login,
+// donde el usuario puede entrar por primera vez sin haber pasado por /register.
 async function login() {
   error.value = ''
   try {
     await signInWithEmailAndPassword(auth, email.value, password.value)
     router.push('/')
   } catch (e) {
+    console.error('login error:', e.code, e.message)
     error.value = 'Email o contraseña incorrectos'
   }
 }
 
-async function loginGoogle() {
+// ── Login social: guarda si es la primera vez ──
+async function loginSocial(ProviderClass) {
   error.value = ''
   try {
-    await signInWithPopup(auth, new GoogleAuthProvider())
+    const { user } = await signInWithPopup(auth, new ProviderClass())
+    console.log('Social login OK — uid:', user.uid, '| email:', user.email, '| nombre:', user.displayName)
+
+    if (!user.email) {
+      console.warn('El proveedor no devolvió email; no se guarda en BD')
+      router.push('/')
+      return
+    }
+
+    // Intenta insertar — si ya existe (409), el servidor lo ignora
+    await saveUserToDb(user.displayName || '', user.email, user.uid)
     router.push('/')
   } catch (e) {
-    error.value = 'Error al iniciar sesión con Google'
+    console.error('loginSocial error:', e.code, e.message)
+    if (e.code !== 'auth/popup-closed-by-user') {
+      error.value = 'Error al iniciar sesión. Inténtalo de nuevo.'
+    }
   }
 }
 
-async function loginFacebook() {
-  error.value = ''
-  try {
-    await signInWithPopup(auth, new FacebookAuthProvider())
-    router.push('/')
-  } catch (e) {
-    error.value = 'Error al iniciar sesión con Facebook'
-  }
-}
-
-async function loginTwitter() {
-  error.value = ''
-  try {
-    await signInWithPopup(auth, new TwitterAuthProvider())
-    router.push('/')
-  } catch (e) {
-    error.value = 'Error al iniciar sesión con X'
-  }
-}
+const loginGoogle   = () => loginSocial(GoogleAuthProvider)
+const loginFacebook = () => loginSocial(FacebookAuthProvider)
+const loginTwitter  = () => loginSocial(TwitterAuthProvider)
 </script>
 
 <template>

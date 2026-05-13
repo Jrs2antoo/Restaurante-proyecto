@@ -1,28 +1,1023 @@
-<script setup>
-import Cabecera from "./Cabecera.vue";
-import Footer from "./Footer.vue";
-</script>
-
 <template>
-  <div id="mis-reservas-app">
-    <Cabecera />
-    <main class="mis-reservas-main"></main>
-    <Footer />
+  <div id="app">
+   <Cabecera />
+
+    <!-- HERO -->
+    <section class="hero">
+      <div class="hero-bg"></div>
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <p class="hero-eyebrow">Tu historial</p>
+        <h1 class="hero-title">Mis<br /><em>reservas</em></h1>
+        <p class="hero-sub">Gestiona, modifica o cancela tus reservas en La Brasa.</p>
+      </div>
+    </section>
+
+    <!-- CONTENIDO -->
+    <section class="main-section">
+      <div class="main-wrapper">
+
+        <!-- CARGANDO -->
+        <div v-if="cargando" class="estado-vacio">
+          <div class="spinner"></div>
+          <p>Cargando tus reservas…</p>
+        </div>
+
+        <!-- SIN RESERVAS -->
+        <div v-else-if="reservas.length === 0" class="estado-vacio">
+          <div class="vacio-icon">📅</div>
+          <h2 class="vacio-titulo">Sin reservas</h2>
+          <p class="vacio-sub">Todavía no tienes ninguna reserva. ¿Te animas a hacer una?</p>
+          <RouterLink to="/reservas" class="btn-primary">Hacer una reserva</RouterLink>
+        </div>
+
+        <!-- LISTADO -->
+        <div v-else>
+          <div class="reservas-header">
+            <h2 class="reservas-titulo">Tienes {{ reservas.length }} {{ reservas.length === 1 ? 'reserva' : 'reservas' }}</h2>
+            <RouterLink to="/reservas" class="btn-outline">+ Nueva reserva</RouterLink>
+          </div>
+
+          <div class="reservas-lista">
+            <div
+              v-for="reserva in reservas"
+              :key="reserva.idReserva"
+              class="reserva-card"
+              :class="'estado-' + reserva.estado"
+            >
+              <div class="reserva-estado-bar"></div>
+              <div class="reserva-body">
+                <div class="reserva-top">
+                  <div class="reserva-fecha-bloque">
+                    <span class="reserva-dia">{{ formatDia(reserva.fecha) }}</span>
+                    <span class="reserva-mes">{{ formatMes(reserva.fecha) }}</span>
+                    <span class="reserva-anio">{{ formatAnio(reserva.fecha) }}</span>
+                  </div>
+                  <div class="reserva-info">
+                    <div class="reserva-ref">#LB{{ String(reserva.idReserva).slice(-6).toUpperCase() }}</div>
+                    <div class="reserva-detalles">
+                      <span class="detalle-item"><span class="detalle-icon">🪑</span> Mesa {{ reserva.idMesa }}</span>
+                      <span class="detalle-item"><span class="detalle-icon">👥</span> {{ reserva.numPersonas }} {{ reserva.numPersonas === 1 ? 'persona' : 'personas' }}</span>
+                      <span class="detalle-item"><span class="detalle-icon">🕐</span> {{ formatHora(reserva.hora) }}</span>
+                      <span v-if="reserva.fianza" class="detalle-item"><span class="detalle-icon">💳</span> Fianza: {{ reserva.fianza }}€</span>
+                    </div>
+                  </div>
+                  <div class="reserva-badge-wrap">
+                    <span class="estado-badge" :class="'badge-' + reserva.estado">
+                      {{ labelEstado(reserva.estado) }}
+                    </span>
+                  </div>
+                </div>
+
+                <div v-if="reserva.peticiones" class="reserva-peticiones">
+                  <span class="detalle-icon">💬</span> {{ reserva.peticiones }}
+                </div>
+
+                <div class="reserva-acciones" v-if="reserva.estado !== 'cancelada'">
+                  <button
+                    class="btn-accion btn-editar"
+                    @click="abrirEdicion(reserva)"
+                    :disabled="isPasada(reserva.fecha)"
+                    :title="isPasada(reserva.fecha) ? 'No se pueden editar reservas pasadas' : 'Editar reserva'"
+                  >
+                    ✏️ Editar
+                  </button>
+                  <button
+                    class="btn-accion btn-cancelar"
+                    @click="pedirCancelacion(reserva)"
+                    :disabled="isPasada(reserva.fecha)"
+                    :title="isPasada(reserva.fecha) ? 'No se pueden cancelar reservas pasadas' : 'Cancelar reserva'"
+                  >
+                    ✕ Cancelar
+                  </button>
+                </div>
+                <div v-else class="reserva-cancelada-msg">Reserva cancelada</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    </section>
+
+    <!-- MODAL CANCELACIÓN -->
+    <Transition name="modal-fade">
+      <div v-if="modalCancelacion" class="modal-overlay" @click.self="modalCancelacion = false">
+        <div class="modal-box modal-cancelacion">
+          <div class="modal-icon-warn">⚠️</div>
+          <h3 class="modal-title">¿Cancelar reserva?</h3>
+          <p class="modal-text">
+            Vas a cancelar la reserva del
+            <strong>{{ fechaFormateadaModal(reservaAcancelar) }}</strong>,
+            mesa <strong>{{ reservaAcancelar?.idMesa }}</strong>.
+          </p>
+          <div class="fianza-aviso">
+            <span class="fianza-aviso-icon">💰</span>
+            <div>
+              <strong>La fianza no será devuelta.</strong>
+              <p>Según nuestras condiciones, la fianza de <strong>{{ reservaAcancelar?.fianza }}€</strong> pagada no es reembolsable en caso de cancelación.</p>
+            </div>
+          </div>
+          <div class="modal-acciones">
+            <button class="btn-secondary" @click="modalCancelacion = false">Mantener reserva</button>
+            <button class="btn-danger" :disabled="cancelando" @click="confirmarCancelacion">
+              <span v-if="!cancelando">Sí, cancelar</span>
+              <span v-else>Cancelando…</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- MODAL EDICIÓN -->
+    <Transition name="modal-fade">
+      <div v-if="modalEdicion" class="modal-overlay" @click.self="cerrarEdicion">
+        <div class="modal-box modal-edicion">
+          <button class="modal-close" @click="cerrarEdicion">✕</button>
+          <div class="modal-edit-header">
+            <span class="section-label">Editando reserva #LB{{ String(reservaAeditar?.idReserva).slice(-6).toUpperCase() }}</span>
+            <h3 class="modal-title-left">Cambiar fecha<br /><em>y mesa</em></h3>
+          </div>
+
+          <!-- Calendario edición -->
+          <div class="edit-seccion">
+            <label class="form-label">Nueva fecha</label>
+            <div class="calendar-wrapper">
+              <div class="calendar-nav">
+                <button class="cal-nav-btn" @click="prevMesEdit">‹</button>
+                <span class="cal-month-title">{{ mesEditNombre }} {{ anioEdit }}</span>
+                <button class="cal-nav-btn" @click="nextMesEdit">›</button>
+              </div>
+              <div class="calendar-grid">
+                <span v-for="d in diasSemana" :key="d" class="cal-dow">{{ d }}</span>
+                <span
+                  v-for="(day, idx) in diasCalendarioEdit"
+                  :key="idx"
+                  class="cal-day"
+                  :class="{
+                    empty: !day,
+                    past: day && isPast(day),
+                    selected: day && isSameDay(day, fechaEditSeleccionada),
+                    today: day && isToday(day),
+                    unavailable: day && !isPast(day) && !isDayAvailableEdit(day)
+                  }"
+                  @click="day && !isPast(day) && isDayAvailableEdit(day) && selectFechaEdit(day)"
+                >
+                  {{ day ? day.getDate() : '' }}
+                </span>
+              </div>
+              <div class="calendar-legend">
+                <span class="legend-item"><span class="legend-dot available"></span>Disponible</span>
+                <span class="legend-item"><span class="legend-dot unavailable"></span>Sin mesas</span>
+                <span class="legend-item"><span class="legend-dot selected-dot"></span>Seleccionado</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Selección de mesa -->
+          <div class="edit-seccion" v-if="fechaEditSeleccionada">
+            <label class="form-label">Selecciona mesa</label>
+            <div class="disponibilidad-info">
+              <div class="disp-badge" :class="disponibilidadEdit.clase">
+                <span class="disp-dot"></span>
+                {{ disponibilidadEdit.texto }}
+              </div>
+            </div>
+            <div class="mesas-grid">
+              <button
+                v-for="mesa in mesasDisponiblesEdit"
+                :key="mesa.idMesa"
+                class="mesa-card"
+                :class="{
+                  selected: mesaEditSeleccionada === mesa.idMesa,
+                  ocupada: !mesa.disponible,
+                  insuficiente: mesa.disponible && mesa.capacidad < (reservaAeditar?.numPersonas || 1)
+                }"
+                :disabled="!mesa.disponible || mesa.capacidad < (reservaAeditar?.numPersonas || 1)"
+                @click="mesaEditSeleccionada = mesa.idMesa"
+              >
+                <span class="mesa-icon">🪑</span>
+                <span class="mesa-num">Mesa {{ mesa.idMesa }}</span>
+                <span class="mesa-capacidad">{{ mesa.capacidad }} {{ mesa.capacidad === 1 ? 'persona' : 'personas' }}</span>
+                <span v-if="!mesa.disponible" class="mesa-tag">Ocupada</span>
+                <span v-else-if="mesa.capacidad < (reservaAeditar?.numPersonas || 1)" class="mesa-tag">Pequeña</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="modal-acciones">
+            <button class="btn-secondary" @click="cerrarEdicion">Cancelar</button>
+            <button
+              class="btn-primary"
+              :disabled="!puedeGuardarEdit || guardando"
+              @click="guardarEdicion"
+            >
+              <span v-if="!guardando">Guardar cambios</span>
+              <span v-else>Guardando…</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+      <div class="footer-inner">
+        <div class="footer-logo">La <span>Brasa</span></div>
+        <p class="footer-copy">© 2025 La Brasa · Granada · Todos los derechos reservados</p>
+      </div>
+    </footer>
   </div>
 </template>
 
-<style scoped>
-#mis-reservas-app {
-  --cream: #f5f0e8;
-  --dark: #1a1410;
-  --gold: #c9963a;
+<script>
+import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
+import Cabecera from "./Cabecera.vue";
+import Footer from "./Footer.vue";
 
-  min-height: 100vh;
-  background: var(--cream);
+const DAB = "/api";
+
+export default {
+  name: "MisReservasPage",
+
+  components: {
+    Cabecera,
+    Footer,
+  },
+
+  data() {
+    return {
+      reservas: [],
+      cargando: true,
+      usuarioActual: null,
+      idUsuarioMySQL: null,
+
+      // Modal cancelación
+      modalCancelacion: false,
+      reservaAcancelar: null,
+      cancelando: false,
+
+      // Modal edición
+      modalEdicion: false,
+      reservaAeditar: null,
+      guardando: false,
+
+      // Calendario edición
+      mesVistaEdit: new Date(
+        new Date().getFullYear(),
+        new Date().getMonth(),
+        1
+      ),
+
+      diasSemana: ["Lu", "Ma", "Mi", "Ju", "Vi", "Sá", "Do"],
+
+      fechaEditSeleccionada: null,
+      mesaEditSeleccionada: null,
+
+      // Datos BD
+      todasLasMesas: [],
+      reservasPorFechaEdit: {},
+      reservasDelDiaEdit: [],
+
+      cargandoMesasEdit: false,
+      cargandoReservasEdit: false,
+    };
+  },
+
+  computed: {
+    anioEdit() {
+      return this.mesVistaEdit.getFullYear();
+    },
+
+    mesEditNombre() {
+      return this.mesVistaEdit
+        .toLocaleString("es-ES", { month: "long" })
+        .replace(/^\w/, c => c.toUpperCase());
+    },
+
+    diasCalendarioEdit() {
+      const year = this.mesVistaEdit.getFullYear();
+      const month = this.mesVistaEdit.getMonth();
+
+      const primerDia = new Date(year, month, 1);
+
+      let startDow = primerDia.getDay();
+      startDow = startDow === 0 ? 6 : startDow - 1;
+
+      const totalDias = new Date(year, month + 1, 0).getDate();
+
+      const dias = [];
+
+      for (let i = 0; i < startDow; i++) dias.push(null);
+
+      for (let d = 1; d <= totalDias; d++) {
+        dias.push(new Date(year, month, d));
+      }
+
+      return dias;
+    },
+
+    fechaEditISO() {
+      if (!this.fechaEditSeleccionada) return "";
+
+      const d = this.fechaEditSeleccionada;
+
+      return `${d.getFullYear()}-${String(
+        d.getMonth() + 1
+      ).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    },
+
+    mesasDisponiblesEdit() {
+      if (!this.fechaEditSeleccionada) return [];
+
+      const mesasOcupadasIds = this.reservasDelDiaEdit
+        .filter(
+          r =>
+            (r.estado === "confirmada" ||
+              r.estado === "pendiente") &&
+            r.idReserva !== this.reservaAeditar?.idReserva
+        )
+        .map(r => r.idMesa);
+
+      return this.todasLasMesas.map(m => ({
+        ...m,
+        disponible:
+          !!m.disponible &&
+          !mesasOcupadasIds.includes(m.idMesa),
+      }));
+    },
+
+    mesasLibresEdit() {
+      return this.mesasDisponiblesEdit.filter(
+        m => m.disponible
+      ).length;
+    },
+
+    disponibilidadEdit() {
+      if (
+        this.cargandoMesasEdit ||
+        this.cargandoReservasEdit
+      ) {
+        return {
+          texto: "Comprobando disponibilidad…",
+          clase: "disp-gris",
+        };
+      }
+
+      const libres = this.mesasLibresEdit;
+
+      if (libres === 0) {
+        return {
+          texto: "Sin mesas disponibles",
+          clase: "disp-rojo",
+        };
+      }
+
+      if (libres <= 2) {
+        return {
+          texto: `¡Últimas ${libres} mesas disponibles!`,
+          clase: "disp-amarillo",
+        };
+      }
+
+      return {
+        texto: `${libres} mesas disponibles`,
+        clase: "disp-verde",
+      };
+    },
+
+    puedeGuardarEdit() {
+      return (
+        this.fechaEditSeleccionada &&
+        this.mesaEditSeleccionada
+      );
+    },
+  },
+
+  watch: {
+    async fechaEditSeleccionada(nuevaFecha) {
+      if (!nuevaFecha) return;
+
+      this.mesaEditSeleccionada = null;
+
+      await this.cargarReservasDelDiaEdit();
+    },
+  },
+
+  mounted() {
+    const auth = getAuth();
+
+    onAuthStateChanged(auth, async user => {
+      this.usuarioActual = user;
+
+      if (user) {
+        await this.cargarTodo();
+      } else {
+        this.cargando = false;
+      }
+    });
+  },
+
+  methods: {
+    async cerrarSesion() {
+      await signOut(getAuth());
+      this.$router.push("/login");
+    },
+
+    async cargarTodo() {
+      this.cargando = true;
+
+      try {
+        await this.resolverIdUsuarioMySQL();
+
+        if (this.idUsuarioMySQL) {
+          await Promise.all([
+            this.cargarReservas(),
+            this.cargarMesas(),
+          ]);
+        }
+      } finally {
+        this.cargando = false;
+      }
+    },
+
+    async resolverIdUsuarioMySQL() {
+      const email = this.usuarioActual?.email;
+
+      if (!email) return;
+
+      try {
+        const res = await fetch(`${DAB}/Usuario`);
+        const json = await res.json();
+
+        const usuario = (json.value || []).find(
+          u =>
+            u.email?.toLowerCase() ===
+            email.toLowerCase()
+        );
+
+        this.idUsuarioMySQL =
+          usuario?.idUsuario || null;
+      } catch (e) {
+        console.error(
+          "Error resolviendo usuario:",
+          e
+        );
+      }
+    },
+
+    async cargarReservas() {
+      try {
+        const res = await fetch(`${DAB}/Reserva`);
+        const json = await res.json();
+
+        this.reservas = (json.value || [])
+          .filter(
+            r => r.idUsuario === this.idUsuarioMySQL
+          )
+          .sort(
+            (a, b) =>
+              new Date(b.fecha) -
+              new Date(a.fecha)
+          );
+      } catch (e) {
+        console.error(
+          "Error cargando reservas:",
+          e
+        );
+
+        this.reservas = [];
+      }
+    },
+
+    async cargarMesas() {
+      this.cargandoMesasEdit = true;
+
+      try {
+        const res = await fetch(`${DAB}/Mesa`);
+        const json = await res.json();
+
+        this.todasLasMesas = json.value || [];
+      } catch (e) {
+        console.error(
+          "Error cargando mesas:",
+          e
+        );
+      } finally {
+        this.cargandoMesasEdit = false;
+      }
+    },
+
+    formatDia(fecha) {
+      return new Date(fecha).getUTCDate();
+    },
+
+    formatMes(fecha) {
+      return new Date(fecha)
+        .toLocaleString("es-ES", {
+          month: "short",
+          timeZone: "UTC",
+        })
+        .replace(".", "")
+        .toUpperCase();
+    },
+
+    formatAnio(fecha) {
+      return new Date(fecha).getUTCFullYear();
+    },
+
+    formatHora(hora) {
+      return String(hora).substring(0, 5);
+    },
+
+    labelEstado(estado) {
+      const mapa = {
+        confirmada: "Confirmada",
+        pendiente: "Pendiente",
+        cancelada: "Cancelada",
+        completada: "Completada",
+      };
+
+      return mapa[estado] || estado;
+    },
+
+    isPasada(fecha) {
+      const hoy = new Date();
+
+      hoy.setHours(0, 0, 0, 0);
+
+      return new Date(fecha) < hoy;
+    },
+
+    pedirCancelacion(reserva) {
+      this.reservaAcancelar = reserva;
+      this.modalCancelacion = true;
+    },
+
+    async confirmarCancelacion() {
+      if (!this.reservaAcancelar) return;
+
+      this.cancelando = true;
+
+      try {
+        const res = await fetch(
+          `${DAB}/Reserva/idReserva/${this.reservaAcancelar.idReserva}`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              estado: "cancelada",
+            }),
+          }
+        );
+
+        if (!res.ok)
+          throw new Error(await res.text());
+
+        const idx = this.reservas.findIndex(
+          r =>
+            r.idReserva ===
+            this.reservaAcancelar.idReserva
+        );
+
+        if (idx !== -1) {
+          this.reservas[idx].estado =
+            "cancelada";
+        }
+
+        this.modalCancelacion = false;
+        this.reservaAcancelar = null;
+      } catch (e) {
+        console.error(
+          "Error cancelando:",
+          e
+        );
+
+        alert(
+          "No se pudo cancelar la reserva."
+        );
+      } finally {
+        this.cancelando = false;
+      }
+    },
+
+    abrirEdicion(reserva) {
+      this.reservaAeditar = reserva;
+
+      this.fechaEditSeleccionada = null;
+      this.mesaEditSeleccionada = null;
+      this.reservasDelDiaEdit = [];
+
+      const f = new Date(reserva.fecha);
+
+      this.mesVistaEdit = new Date(
+        f.getUTCFullYear(),
+        f.getUTCMonth(),
+        1
+      );
+
+      this.modalEdicion = true;
+
+      this.cargarReservasMesEdit();
+    },
+
+    cerrarEdicion() {
+      this.modalEdicion = false;
+      this.reservaAeditar = null;
+      this.fechaEditSeleccionada = null;
+      this.mesaEditSeleccionada = null;
+    },
+
+    isPast(day) {
+      const hoy = new Date();
+
+      hoy.setHours(0, 0, 0, 0);
+
+      return day < hoy;
+    },
+
+    isToday(day) {
+      return (
+        day.toDateString() ===
+        new Date().toDateString()
+      );
+    },
+
+    isSameDay(a, b) {
+      if (!a || !b) return false;
+
+      return (
+        a.toDateString() ===
+        b.toDateString()
+      );
+    },
+
+    isDayAvailableEdit(day) {
+      if (this.isPast(day)) return false;
+
+      const iso = `${day.getFullYear()}-${String(
+        day.getMonth() + 1
+      ).padStart(2, "0")}-${String(
+        day.getDate()
+      ).padStart(2, "0")}`;
+
+      const reservasEseDia =
+        this.reservasPorFechaEdit[iso] || [];
+
+      const mesasOcupadas = reservasEseDia
+        .filter(
+          r =>
+            (r.estado === "confirmada" ||
+              r.estado === "pendiente") &&
+            r.idReserva !==
+              this.reservaAeditar?.idReserva
+        )
+        .map(r => r.idMesa);
+
+      return (
+        mesasOcupadas.length <
+        this.todasLasMesas.length
+      );
+    },
+
+    selectFechaEdit(day) {
+      this.fechaEditSeleccionada = day;
+    },
+
+    prevMesEdit() {
+      const d = new Date(this.mesVistaEdit);
+
+      d.setMonth(d.getMonth() - 1);
+
+      this.mesVistaEdit = d;
+
+      this.cargarReservasMesEdit();
+    },
+
+    nextMesEdit() {
+      const d = new Date(this.mesVistaEdit);
+
+      d.setMonth(d.getMonth() + 1);
+
+      this.mesVistaEdit = d;
+
+      this.cargarReservasMesEdit();
+    },
+
+    async cargarReservasMesEdit() {
+      try {
+        const res = await fetch(`${DAB}/Reserva`);
+        const json = await res.json();
+
+        const cache = {};
+
+        (json.value || []).forEach(r => {
+          if (!r.fecha) return;
+
+          const fecha = String(r.fecha).substring(
+            0,
+            10
+          );
+
+          if (!cache[fecha]) {
+            cache[fecha] = [];
+          }
+
+          cache[fecha].push(r);
+        });
+
+        this.reservasPorFechaEdit = cache;
+      } catch (e) {
+        console.error(e);
+      }
+    },
+
+    async cargarReservasDelDiaEdit() {
+      if (!this.fechaEditISO) return;
+
+      this.cargandoReservasEdit = true;
+
+      try {
+        const res = await fetch(`${DAB}/Reserva`);
+        const json = await res.json();
+
+        this.reservasDelDiaEdit = (
+          json.value || []
+        ).filter(r => {
+          if (!r.fecha) return false;
+
+          return (
+            String(r.fecha).substring(0, 10) ===
+            this.fechaEditISO
+          );
+        });
+      } catch (e) {
+        console.error(e);
+
+        this.reservasDelDiaEdit = [];
+      } finally {
+        this.cargandoReservasEdit = false;
+      }
+    },
+
+    async guardarEdicion() {
+      if (
+        !this.puedeGuardarEdit ||
+        !this.reservaAeditar
+      ) {
+        return;
+      }
+
+      this.guardando = true;
+
+      try {
+        const body = {
+          fecha: this.fechaEditISO,
+          idMesa: this.mesaEditSeleccionada,
+        };
+
+        const res = await fetch(
+          `${DAB}/Reserva/idReserva/${this.reservaAeditar.idReserva}`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+            body: JSON.stringify(body),
+          }
+        );
+
+        if (!res.ok)
+          throw new Error(await res.text());
+
+        const idx = this.reservas.findIndex(
+          r =>
+            r.idReserva ===
+            this.reservaAeditar.idReserva
+        );
+
+        if (idx !== -1) {
+          this.reservas[idx].fecha =
+            this.fechaEditISO;
+
+          this.reservas[idx].idMesa =
+            this.mesaEditSeleccionada;
+        }
+
+        this.cerrarEdicion();
+      } catch (e) {
+        console.error(e);
+
+        alert(
+          "No se pudo guardar la edición."
+        );
+      } finally {
+        this.guardando = false;
+      }
+    },
+  },
+};
+</script>
+
+<style scoped>
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&display=swap");
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --cream: #f5f0e8; --dark: #1a1410; --brown: #6b4c2a;
+  --gold: #c9963a; --warm: #e8ddd0; --text: #2d2520;
 }
 
-.mis-reservas-main {
-  min-height: calc(100vh - 72px);
-  padding-top: 72px;
+#app { font-family: "Jost", sans-serif; background: var(--cream); color: var(--text); min-height: 100vh; }
+
+/* NAVBAR */
+nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 1.4rem 5vw; transition: background 0.4s, padding 0.4s; }
+nav.scrolled { background: rgba(26, 20, 16, 0.96); backdrop-filter: blur(12px); padding: 0.9rem 5vw; }
+.nav-logo { font-family: "Cormorant Garamond", serif; font-size: 1.5rem; font-weight: 400; color: var(--cream); text-decoration: none; letter-spacing: 0.04em; }
+.nav-logo span { color: var(--gold); }
+.nav-links { display: flex; align-items: center; gap: 2.4rem; list-style: none; }
+.nav-links a { color: rgba(245,240,232,0.75); text-decoration: none; font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 400; transition: color 0.2s; }
+.nav-links a:hover, .nav-links a.active { color: var(--gold); }
+.nav-btn { border: 1.5px solid rgba(201,150,58,0.5); padding: 7px 20px; color: var(--cream) !important; }
+.nav-btn:hover { border-color: var(--gold); background: rgba(201,150,58,0.1); }
+.nav-user-menu { position: relative; }
+.nav-user-btn { display: flex; align-items: center; gap: 8px; background: none; border: none; cursor: pointer; color: var(--cream); font-family: "Jost", sans-serif; }
+.nav-user-avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--gold); color: var(--dark); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.75rem; }
+.nav-user-name { font-size: 0.72rem; letter-spacing: 0.1em; }
+.nav-user-chevron { font-size: 0.9rem; transition: transform 0.2s; }
+.nav-user-chevron.open { transform: rotate(180deg); }
+.nav-dropdown { position: absolute; top: calc(100% + 10px); right: 0; background: #23180f; border: 1px solid rgba(201,150,58,0.2); min-width: 180px; border-radius: 4px; overflow: hidden; }
+.nav-dropdown-item { display: block; width: 100%; padding: 12px 16px; color: var(--cream); text-decoration: none; font-size: 0.8rem; background: none; border: none; cursor: pointer; text-align: left; transition: background 0.2s; }
+.nav-dropdown-item:hover { background: rgba(201,150,58,0.12); }
+.nav-logout { color: #e08080 !important; }
+
+/* HERO */
+.hero { position: relative; height: 42vh; min-height: 280px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.hero-bg { position: absolute; inset: 0; background-image: url("https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1600&q=80"); background-size: cover; background-position: center 40%; }
+.hero-overlay { position: absolute; inset: 0; background: linear-gradient(160deg, rgba(26,20,16,0.82) 0%, rgba(26,20,16,0.55) 60%, rgba(107,76,42,0.3) 100%); }
+.hero-content { position: relative; text-align: center; color: var(--cream); animation: fadeUp 1s ease both; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.hero-eyebrow { font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold); margin-bottom: 1rem; }
+.hero-title { font-family: "Cormorant Garamond", serif; font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 300; line-height: 1; }
+.hero-title em { font-style: italic; color: var(--gold); }
+.hero-sub { font-size: 0.85rem; font-weight: 300; opacity: 0.8; margin-top: 1rem; letter-spacing: 0.06em; }
+
+/* MAIN */
+.main-section { padding: 4rem 5vw 6rem; }
+.main-wrapper { max-width: 900px; margin: 0 auto; }
+
+/* EMPTY STATE */
+.estado-vacio { text-align: center; padding: 5rem 2rem; }
+.spinner { width: 40px; height: 40px; border: 3px solid rgba(201,150,58,0.2); border-top-color: var(--gold); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 1.5rem; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.vacio-icon { font-size: 3rem; margin-bottom: 1.2rem; }
+.vacio-titulo { font-family: "Cormorant Garamond", serif; font-size: 2rem; font-weight: 300; color: var(--dark); margin-bottom: 0.6rem; }
+.vacio-sub { font-size: 0.88rem; color: rgba(45,37,32,0.55); margin-bottom: 2rem; }
+
+/* HEADER */
+.reservas-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2.4rem; flex-wrap: wrap; gap: 1rem; }
+.reservas-titulo { font-family: "Cormorant Garamond", serif; font-size: 1.6rem; font-weight: 300; color: var(--dark); }
+
+/* LISTA */
+.reservas-lista { display: flex; flex-direction: column; gap: 1.2rem; }
+.reserva-card { display: flex; border-radius: 4px; overflow: hidden; background: white; border: 1px solid rgba(45,37,32,0.1); transition: box-shadow 0.2s, transform 0.2s; }
+.reserva-card:hover { box-shadow: 0 4px 20px rgba(45,37,32,0.08); transform: translateY(-1px); }
+.reserva-estado-bar { width: 4px; flex-shrink: 0; }
+.estado-confirmada .reserva-estado-bar { background: #4ab564; }
+.estado-pendiente .reserva-estado-bar { background: var(--gold); }
+.estado-cancelada .reserva-estado-bar { background: rgba(45,37,32,0.2); }
+.estado-completada .reserva-estado-bar { background: #6b9ecf; }
+.reserva-body { flex: 1; padding: 1.4rem 1.6rem; }
+.reserva-top { display: grid; grid-template-columns: 70px 1fr auto; gap: 1.4rem; align-items: start; }
+.reserva-fecha-bloque { display: flex; flex-direction: column; align-items: center; background: var(--dark); border-radius: 4px; padding: 10px 8px; text-align: center; }
+.reserva-dia { font-family: "Cormorant Garamond", serif; font-size: 2rem; color: var(--gold); line-height: 1; font-weight: 400; }
+.reserva-mes { font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(245,240,232,0.7); font-weight: 500; }
+.reserva-anio { font-size: 0.65rem; color: rgba(245,240,232,0.4); margin-top: 2px; }
+.reserva-info { display: flex; flex-direction: column; gap: 6px; }
+.reserva-ref { font-size: 0.62rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); font-weight: 500; margin-bottom: 4px; }
+.reserva-detalles { display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.detalle-item { font-size: 0.82rem; color: rgba(45,37,32,0.65); display: flex; align-items: center; gap: 4px; }
+.detalle-icon { font-size: 0.85rem; }
+.reserva-badge-wrap { display: flex; align-items: flex-start; }
+.estado-badge { padding: 4px 12px; border-radius: 20px; font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase; font-weight: 500; }
+.badge-confirmada { background: rgba(74,181,100,0.12); color: #2d7a45; }
+.badge-pendiente { background: rgba(201,150,58,0.12); color: var(--brown); }
+.badge-cancelada { background: rgba(45,37,32,0.08); color: rgba(45,37,32,0.45); }
+.badge-completada { background: rgba(107,158,207,0.12); color: #3a6fa0; }
+.reserva-peticiones { font-size: 0.78rem; color: rgba(45,37,32,0.5); margin-top: 1rem; padding-top: 0.8rem; border-top: 1px solid rgba(45,37,32,0.07); font-style: italic; display: flex; align-items: center; gap: 6px; }
+.reserva-acciones { display: flex; gap: 10px; margin-top: 1.2rem; padding-top: 1rem; border-top: 1px solid rgba(45,37,32,0.07); }
+.reserva-cancelada-msg { font-size: 0.72rem; color: rgba(45,37,32,0.35); margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(45,37,32,0.07); letter-spacing: 0.1em; text-transform: uppercase; }
+.btn-accion { padding: 8px 18px; border-radius: 2px; font-family: "Jost", sans-serif; font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase; font-weight: 500; cursor: pointer; border: 1px solid transparent; transition: all 0.2s; }
+.btn-accion:disabled { opacity: 0.35; cursor: not-allowed; }
+.btn-editar { background: none; border-color: rgba(45,37,32,0.2); color: var(--text); }
+.btn-editar:hover:not(:disabled) { border-color: var(--dark); background: rgba(26,20,16,0.04); }
+.btn-cancelar { background: none; border-color: rgba(200,80,80,0.25); color: #a33; }
+.btn-cancelar:hover:not(:disabled) { background: rgba(200,80,80,0.06); border-color: rgba(200,80,80,0.5); }
+
+/* BOTONES */
+.btn-primary { display: inline-flex; align-items: center; gap: 10px; padding: 13px 32px; background: var(--dark); color: var(--cream); border: none; cursor: pointer; font-family: "Jost", sans-serif; font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 500; transition: background 0.25s; border-radius: 2px; text-decoration: none; }
+.btn-primary:hover:not(:disabled) { background: var(--brown); }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-secondary { display: inline-flex; align-items: center; gap: 8px; padding: 13px 24px; background: transparent; color: var(--text); border: 1px solid rgba(45,37,32,0.2); cursor: pointer; font-family: "Jost", sans-serif; font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 400; transition: border-color 0.2s; text-decoration: none; border-radius: 2px; }
+.btn-secondary:hover { border-color: var(--text); }
+.btn-outline { display: inline-flex; align-items: center; padding: 10px 22px; background: none; color: var(--text); border: 1.5px solid rgba(45,37,32,0.2); font-family: "Jost", sans-serif; font-size: 0.7rem; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 500; cursor: pointer; text-decoration: none; border-radius: 2px; transition: border-color 0.2s, color 0.2s; }
+.btn-outline:hover { border-color: var(--gold); color: var(--brown); }
+.btn-danger { display: inline-flex; align-items: center; padding: 13px 28px; background: #c23; color: white; border: none; cursor: pointer; font-family: "Jost", sans-serif; font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 500; transition: background 0.2s; border-radius: 2px; }
+.btn-danger:hover:not(:disabled) { background: #a11; }
+.btn-danger:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* MODALES */
+.modal-overlay { position: fixed; inset: 0; background: rgba(26,20,16,0.65); backdrop-filter: blur(4px); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+.modal-box { background: var(--cream); border-radius: 6px; padding: 2.4rem; max-width: 480px; width: 100%; position: relative; animation: fadeUp 0.3s ease both; }
+.modal-edicion { max-width: 680px; max-height: 90vh; overflow-y: auto; padding: 2rem; }
+.modal-close { position: absolute; top: 1.2rem; right: 1.2rem; background: none; border: none; cursor: pointer; font-size: 1rem; color: rgba(45,37,32,0.4); transition: color 0.2s; line-height: 1; }
+.modal-close:hover { color: var(--text); }
+.modal-icon-warn { font-size: 2.8rem; text-align: center; margin-bottom: 1rem; }
+.modal-title { font-family: "Cormorant Garamond", serif; font-size: 1.8rem; font-weight: 300; color: var(--dark); margin-bottom: 0.8rem; text-align: center; }
+.modal-title-left { font-family: "Cormorant Garamond", serif; font-size: 1.8rem; font-weight: 300; color: var(--dark); margin-bottom: 1.6rem; line-height: 1.2; }
+.modal-title-left em { font-style: italic; color: var(--brown); }
+.modal-text { font-size: 0.88rem; color: rgba(45,37,32,0.65); text-align: center; margin-bottom: 1.6rem; line-height: 1.6; }
+.modal-acciones { display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem; flex-wrap: wrap; }
+
+/* FIANZA AVISO */
+.fianza-aviso { display: flex; gap: 1rem; align-items: flex-start; background: rgba(201,150,58,0.08); border: 1px solid rgba(201,150,58,0.3); border-radius: 4px; padding: 1.2rem; margin-bottom: 1.6rem; }
+.fianza-aviso-icon { font-size: 1.6rem; flex-shrink: 0; }
+.fianza-aviso strong { display: block; font-size: 0.9rem; color: var(--dark); margin-bottom: 4px; }
+.fianza-aviso p { font-size: 0.8rem; color: rgba(45,37,32,0.6); line-height: 1.5; }
+
+/* EDIT HEADER */
+.modal-edit-header { margin-bottom: 1.8rem; }
+.section-label { font-size: 0.62rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold); margin-bottom: 0.6rem; display: block; }
+.edit-seccion { margin-bottom: 2rem; }
+.form-label { display: block; font-size: 0.68rem; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 500; color: rgba(45,37,32,0.6); margin-bottom: 0.6rem; }
+
+/* CALENDARIO */
+.calendar-wrapper { background: white; border: 1px solid rgba(45,37,32,0.12); border-radius: 4px; padding: 1.2rem; }
+.calendar-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+.cal-nav-btn { width: 32px; height: 32px; border-radius: 50%; background: none; border: 1px solid rgba(45,37,32,0.2); cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s; color: var(--text); }
+.cal-nav-btn:hover { background: var(--gold); border-color: var(--gold); color: var(--dark); }
+.cal-month-title { font-family: "Cormorant Garamond", serif; font-size: 1.1rem; font-weight: 400; color: var(--dark); }
+.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal-dow { text-align: center; font-size: 0.6rem; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(45,37,32,0.4); padding: 4px 0 6px; font-weight: 500; }
+.cal-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 0.82rem; border-radius: 50%; cursor: pointer; transition: all 0.15s; font-weight: 300; color: var(--text); border: 1px solid transparent; }
+.cal-day:not(.empty):not(.past):not(.unavailable):hover { background: rgba(201,150,58,0.15); border-color: rgba(201,150,58,0.4); }
+.cal-day.today { font-weight: 600; border-color: rgba(201,150,58,0.5); }
+.cal-day.selected { background: var(--dark) !important; color: var(--cream) !important; border-color: var(--dark) !important; }
+.cal-day.past { opacity: 0.25; cursor: not-allowed; }
+.cal-day.unavailable { opacity: 0.4; cursor: not-allowed; text-decoration: line-through; }
+.cal-day.empty { cursor: default; }
+.calendar-legend { display: flex; gap: 1.2rem; margin-top: 1rem; padding-top: 0.8rem; border-top: 1px solid rgba(45,37,32,0.08); }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.7rem; color: rgba(45,37,32,0.55); }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+.legend-dot.available { background: var(--gold); opacity: 0.7; }
+.legend-dot.unavailable { background: rgba(45,37,32,0.2); }
+.legend-dot.selected-dot { background: var(--dark); }
+
+/* DISPONIBILIDAD */
+.disponibilidad-info { margin-bottom: 0.8rem; }
+.disp-badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 500; }
+.disp-dot { width: 8px; height: 8px; border-radius: 50%; animation: pulse 1.5s ease infinite; }
+@keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.3); opacity: 0.7; } }
+.disp-verde { background: rgba(74,181,100,0.12); color: #2d7a45; }
+.disp-verde .disp-dot { background: #4ab564; }
+.disp-amarillo { background: rgba(201,150,58,0.12); color: var(--brown); }
+.disp-amarillo .disp-dot { background: var(--gold); }
+.disp-rojo { background: rgba(220,80,80,0.1); color: #a33; }
+.disp-rojo .disp-dot { background: #dc5050; }
+.disp-gris { background: rgba(45,37,32,0.06); color: rgba(45,37,32,0.5); }
+.disp-gris .disp-dot { background: rgba(45,37,32,0.3); animation: none; }
+
+/* MESAS */
+.mesas-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-top: 0.6rem; }
+.mesa-card { position: relative; display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 4px 8px; min-height: 70px; padding: 12px; background: white; border: 1.5px solid rgba(45,37,32,0.12); border-radius: 4px; cursor: pointer; font-family: "Jost", sans-serif; color: var(--text); text-align: left; transition: border-color 0.2s, background 0.2s; }
+.mesa-card:hover:not(:disabled) { border-color: var(--gold); background: rgba(201,150,58,0.06); }
+.mesa-card.selected { border-color: var(--dark); background: rgba(26,20,16,0.04); }
+.mesa-card.ocupada, .mesa-card.insuficiente { opacity: 0.4; cursor: not-allowed; }
+.mesa-card .mesa-icon { grid-row: span 2; font-size: 1.1rem; }
+.mesa-num { font-size: 0.84rem; font-weight: 500; color: var(--dark); }
+.mesa-capacidad { font-size: 0.7rem; color: rgba(45,37,32,0.55); }
+.mesa-tag { position: absolute; right: 8px; bottom: 6px; font-size: 0.54rem; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(45,37,32,0.45); }
+
+/* TRANSITIONS */
+.modal-fade-enter-active, .modal-fade-leave-active { transition: opacity 0.25s; }
+.modal-fade-enter-from, .modal-fade-leave-to { opacity: 0; }
+
+/* FOOTER */
+.footer { background: var(--dark); padding: 2rem 5vw; }
+.footer-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
+.footer-logo { font-family: "Cormorant Garamond", serif; font-size: 1.3rem; color: var(--cream); }
+.footer-logo span { color: var(--gold); }
+.footer-copy { font-size: 0.7rem; color: rgba(245,240,232,0.3); letter-spacing: 0.1em; }
+
+/* RESPONSIVE */
+@media (max-width: 650px) {
+  .reserva-top { grid-template-columns: 60px 1fr; }
+  .reserva-badge-wrap { grid-column: 1 / -1; }
+  .modal-acciones { flex-direction: column; }
+  .footer-inner { flex-direction: column; gap: 0.8rem; text-align: center; }
 }
 </style>

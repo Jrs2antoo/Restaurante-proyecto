@@ -304,7 +304,8 @@
 
 <script setup>
 import { ref, watch } from "vue";
-import { getAuth, signOut } from "firebase/auth";
+import { getAuth, signOut, deleteUser } from "firebase/auth";
+import { getFirestore, collection, query, where, getDocs, deleteDoc } from "firebase/firestore";
 import { useRouter } from "vue-router";
 
 const API = "/api";
@@ -325,7 +326,6 @@ const tabTitles = {
   mesas: "Configuración de Salón"
 };
 
-// Modales
 const modalUsuario  = ref(false);
 const modalProducto = ref(false);
 const modalMesa     = ref(false);
@@ -336,7 +336,6 @@ const editingMesa     = ref({});
 const editingReserva  = ref({});
 const deleteConfirm   = ref({ show: false, type: "", id: null });
 
-// Toast
 const toast = ref({ show: false, type: "success", msg: "" });
 const showToast = (msg, type = "success") => {
   toast.value = { show: true, type, msg };
@@ -507,6 +506,37 @@ const confirmDelete = (type, id) => {
   deleteConfirm.value = { show: true, type, id };
 };
 
+// Busca el usuario en Firestore por email y borra su documento
+async function deleteFromFirestore(email) {
+  try {
+    const db = getFirestore();
+    const q = query(collection(db, "usuarios"), where("email", "==", email));
+    const snap = await getDocs(q);
+    const deletes = snap.docs.map(d => deleteDoc(d.ref));
+    await Promise.all(deletes);
+    console.log("Firestore: documento eliminado para", email);
+  } catch (e) {
+    console.warn("Firestore: no se pudo eliminar el documento", e);
+  }
+}
+
+// Borra el usuario de Firebase Auth (solo funciona si es el usuario actualmente logueado)
+async function deleteFromFirebaseAuth(email) {
+  try {
+    const auth = getAuth();
+    const currentUser = auth.currentUser;
+    // Solo se puede borrar si el email coincide con el usuario actual
+    if (currentUser && currentUser.email === email) {
+      await deleteUser(currentUser);
+      console.log("Firebase Auth: usuario eliminado");
+    } else {
+      console.warn("Firebase Auth: no se puede borrar otro usuario desde el cliente. Usa Firebase Admin SDK en backend.");
+    }
+  } catch (e) {
+    console.warn("Firebase Auth: error al eliminar", e);
+  }
+}
+
 const executeDelete = async () => {
   const { type, id } = deleteConfirm.value;
   const endpointMap = {
@@ -515,9 +545,21 @@ const executeDelete = async () => {
     reserva:  "Reserva/idReserva",
     mesa:     "Mesa/idMesa"
   };
+
   try {
+    // 1. Si es usuario, borramos también de Firebase
+    if (type === "usuario") {
+      const usuario = usuarios.value.find(u => u.idUsuario === id);
+      if (usuario?.email) {
+        await deleteFromFirestore(usuario.email);
+        await deleteFromFirebaseAuth(usuario.email);
+      }
+    }
+
+    // 2. Borramos de la BD (MySQL vía DAB)
     const res = await fetch(`${API}/${endpointMap[type]}/${id}`, { method: "DELETE" });
     if (!res.ok) throw new Error();
+
     deleteConfirm.value.show = false;
     showToast("Registro eliminado correctamente.");
     refresh();

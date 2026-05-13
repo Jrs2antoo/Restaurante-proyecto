@@ -126,24 +126,36 @@ const form = ref({ nombre: '', email: '', password: '', confirm: '' })
 
 // ── Guarda el usuario en MySQL vía DAB ──
 async function saveUserToDb(nombre, email, passwordHash = 'firebase-auth') {
+  if (!email) {
+    console.warn('saveUserToDb: email vacío, se omite')
+    return
+  }
+
   try {
+    const payload = {
+      nombre: nombre || '',
+      apellido: '',
+      email: email,
+      contraseña: passwordHash,
+      rol: 'cliente'
+    }
+    console.log('saveUserToDb: enviando →', payload)
+
     const res = await fetch('http://localhost:5000/api/Usuario', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        nombre: nombre || '',
-        apellido: '',
-        email: email || '',
-        contraseña: passwordHash,   // NOT NULL en la BD — no puede ir vacío
-        rol: 'cliente'
-      }),
+      body: JSON.stringify(payload),
     })
-    if (!res.ok) {
-      const body = await res.text()
-      console.error('No se pudo guardar el usuario en la BD, status:', res.status, body)
+
+    const body = await res.text()
+    console.log('saveUserToDb: respuesta →', res.status, body)
+
+    // 409 Conflict = duplicado, no es error crítico
+    if (!res.ok && res.status !== 409) {
+      console.error('saveUserToDb: error del servidor', res.status, body)
     }
   } catch (e) {
-    console.error('Error al conectar con la BD:', e)
+    console.error('saveUserToDb: error de red', e)
   }
 }
 
@@ -188,11 +200,11 @@ async function handleRegister() {
   try {
     const { user } = await createUserWithEmailAndPassword(auth, form.value.email.trim(), form.value.password)
     await updateProfile(user, { displayName: form.value.nombre.trim() })
-    // Guardamos el uid de Firebase como "contraseña" para identificar al usuario
     await saveUserToDb(form.value.nombre.trim(), form.value.email.trim(), user.uid)
     successMsg.value = '¡Cuenta creada! Redirigiendo...'
     setTimeout(() => router.push('/'), 1400)
   } catch (err) {
+    console.error('handleRegister error:', err.code, err.message)
     errorMsg.value = firebaseError(err.code)
   } finally {
     loading.value = false
@@ -204,10 +216,21 @@ async function handleSocial(ProviderClass) {
   loading.value = true
   try {
     const { user } = await signInWithPopup(auth, new ProviderClass())
-    await saveUserToDb(user.displayName || '', user.email || '', user.uid)
+    console.log('Social login OK — uid:', user.uid, '| email:', user.email, '| nombre:', user.displayName)
+
+    if (!user.email) {
+      console.warn('El proveedor no devolvió email; no se guarda en BD')
+      router.push('/')
+      return
+    }
+
+    await saveUserToDb(user.displayName || '', user.email, user.uid)
     router.push('/')
   } catch (err) {
-    if (err.code !== 'auth/popup-closed-by-user') errorMsg.value = firebaseError(err.code)
+    console.error('handleSocial error:', err.code, err.message)
+    if (err.code !== 'auth/popup-closed-by-user') {
+      errorMsg.value = firebaseError(err.code)
+    }
   } finally {
     loading.value = false
   }
