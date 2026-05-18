@@ -1,152 +1,155 @@
 <template>
-  <div class="admin-container">
-    <aside class="admin-sidebar">
-      <RouterLink to="/" class="nav-logo">La <span>Brasa</span></RouterLink>
-      <nav class="sidebar-nav">
-        <button :class="{ active: currentTab === 'usuarios' }" @click="currentTab = 'usuarios'">👤 Usuarios</button>
-        <button :class="{ active: currentTab === 'productos' }" @click="currentTab = 'productos'">🍽️ Productos</button>
-        <button :class="{ active: currentTab === 'reservas' }" @click="currentTab = 'reservas'">📅 Reservas</button>
-        <button :class="{ active: currentTab === 'mesas' }" @click="currentTab = 'mesas'">🪑 Mesas</button>
-      </nav>
-      <button class="btn-logout" @click="handleLogout">🚪 Cerrar sesión</button>
-    </aside>
+  <div class="admin-wrapper">
+    <Cabecera />
+    <div class="admin-container">
 
-    <main class="admin-main">
-      <header class="admin-header">
-        <h1>{{ tabTitles[currentTab] }}</h1>
-        <button v-if="currentTab === 'productos'" class="btn-add" @click="openAddProducto">+ Nuevo Producto</button>
-        <button v-if="currentTab === 'mesas'" class="btn-add" @click="openAddMesa">+ Nueva Mesa</button>
-        <button v-if="currentTab === 'reservas'" class="btn-add" @click="openAddReserva">+ Nueva Reserva</button>
-      </header>
+      <!-- SIDEBAR -->
+      <aside class="admin-sidebar">
+        <nav class="sidebar-nav">
+          <button :class="{ active: currentTab === 'usuarios' }" @click="currentTab = 'usuarios'">👤 Usuarios</button>
+          <button :class="{ active: currentTab === 'productos' }" @click="currentTab = 'productos'">🍽️ Productos</button>
+          <button :class="{ active: currentTab === 'reservas' }" @click="currentTab = 'reservas'">📅 Reservas</button>
+          <button :class="{ active: currentTab === 'mesas' }" @click="currentTab = 'mesas'">🪑 Mesas</button>
+        </nav>
+      </aside>
 
-      <div v-if="loading" class="state-msg">Conectando con la base de datos...</div>
-      <div v-else-if="error" class="state-msg error">{{ error }}</div>
+      <!-- MAIN -->
+      <main class="admin-main">
+        <header class="admin-header">
+          <h1>{{ tabTitles[currentTab] }}</h1>
+          <button v-if="currentTab === 'productos'" class="btn-add" @click="openAddProducto">+ Nuevo Producto</button>
+          <button v-if="currentTab === 'mesas'" class="btn-add" @click="openAddMesa">+ Nueva Mesa</button>
+          <button v-if="currentTab === 'reservas'" class="btn-add" @click="openAddReserva">+ Nueva Reserva</button>
+        </header>
 
-      <div v-else class="admin-card table-wrapper">
-        <div class="table-wrapper">
+        <div v-if="loading" class="state-msg">Conectando con la base de datos...</div>
+        <div v-else-if="error" class="state-msg error">{{ error }}</div>
 
-        <!-- TABLA USUARIOS -->
-        <table v-if="currentTab === 'usuarios'">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Nombre</th>
-              <th>Apellidos</th>
-              <th>Email</th>
-              <th>Rol</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="u in usuarios" :key="u.idUsuario">
-              <td>{{ u.idUsuario }}</td>
-              <td>{{ u.nombre }}</td>
-              <td>{{ u.apellido }}</td>
-              <td>{{ u.email }}</td>
-              <td><span class="badge" :class="u.rol">{{ u.rol }}</span></td>
-              <td class="actions">
-                <button class="btn-edit" @click="openEditUsuario(u)">✏️ Editar</button>
-                <button class="btn-delete" @click="confirmDelete('usuario', u.idUsuario)">🗑️ Eliminar</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div v-else class="admin-card table-wrapper">
+          <div class="table-wrapper">
 
-        <!-- TABLA PRODUCTOS -->
-        <table v-if="currentTab === 'productos'">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Nombre</th>
-              <th>Precio</th>
-              <th>Categoría</th>
-              <th>Descripción</th>
-              <th>Disponible</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="p in productos" :key="p.idProducto">
-              <td>{{ p.idProducto }}</td>
-              <td>{{ p.nombre }}</td>
-              <td>{{ p.precio }}€</td>
-              <td>{{ p.categoria }}</td>
-              <td class="td-desc">{{ p.descripcion || '—' }}</td>
-              <td><span class="badge" :class="p.disponible ? 'disponible' : 'nodisponible'">{{ p.disponible ? 'Sí' : 'No' }}</span></td>
-              <td class="actions">
-                <button class="btn-edit" @click="openEditProducto(p)">✏️ Editar</button>
-                <button class="btn-delete" @click="confirmDelete('producto', p.idProducto)">🗑️ Eliminar</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+            <!-- TABLA USUARIOS -->
+            <table v-if="currentTab === 'usuarios'">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Nombre</th>
+                  <th>Apellidos</th>
+                  <th>Email</th>
+                  <th>Rol</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="u in usuarios" :key="u.idUsuario">
+                  <td>{{ u.idUsuario }}</td>
+                  <td>{{ u.nombre }}</td>
+                  <td>{{ u.apellido }}</td>
+                  <td>{{ u.email }}</td>
+                  <td><span class="badge" :class="u.rol">{{ u.rol }}</span></td>
+                  <td class="actions">
+                    <button class="btn-edit" @click="openEditUsuario(u)">✏️ Editar</button>
+                    <button class="btn-delete" @click="confirmDelete('usuario', u.idUsuario)">🗑️ Eliminar</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
 
-        <!-- TABLA MESAS -->
-        <table v-if="currentTab === 'mesas'">
-          <thead>
-            <tr>
-              <th>ID Mesa</th>
-              <th>Capacidad</th>
-              <th>Ubicación</th>
-              <th>Estado</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="m in mesas" :key="m.idMesa">
-              <td><strong>#{{ m.idMesa }}</strong></td>
-              <td>{{ m.capacidad }} personas</td>
-              <td>{{ m.ubicacion }}</td>
-              <td>
-                <span class="badge" :class="m.disponible ? 'disponible' : 'nodisponible'">
-                  {{ m.disponible ? 'Disponible' : 'Ocupada' }}
-                </span>
-              </td>
-              <td class="actions">
-                <button class="btn-edit" @click="openEditMesa(m)">✏️ Editar</button>
-                <button class="btn-delete" @click="confirmDelete('mesa', m.idMesa)">🗑️ Eliminar</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+            <!-- TABLA PRODUCTOS -->
+            <table v-if="currentTab === 'productos'">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Nombre</th>
+                  <th>Precio</th>
+                  <th>Categoría</th>
+                  <th>Descripción</th>
+                  <th>Disponible</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="p in productos" :key="p.idProducto">
+                  <td>{{ p.idProducto }}</td>
+                  <td>{{ p.nombre }}</td>
+                  <td>{{ p.precio }}€</td>
+                  <td>{{ p.categoria }}</td>
+                  <td class="td-desc">{{ p.descripcion || '—' }}</td>
+                  <td><span class="badge" :class="p.disponible ? 'disponible' : 'nodisponible'">{{ p.disponible ? 'Sí' : 'No' }}</span></td>
+                  <td class="actions">
+                    <button class="btn-edit" @click="openEditProducto(p)">✏️ Editar</button>
+                    <button class="btn-delete" @click="confirmDelete('producto', p.idProducto)">🗑️ Eliminar</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
 
-        <!-- TABLA RESERVAS -->
-        <table v-if="currentTab === 'reservas'">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Mesa</th>
-              <th>Fecha</th>
-              <th>Hora</th>
-              <th>Personas</th>
-              <th>Fianza</th>
-              <th>Estado Pago</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="r in reservas" :key="r.idReserva">
-              <td>{{ r.idReserva }}</td>
-              <td>Mesa {{ r.idMesa }}</td>
-              <td>{{ r.fecha }}</td>
-              <td>{{ r.hora }}</td>
-              <td>{{ r.numPersonas }}</td>
-              <td>{{ r.fianza }}€</td>
-              <td><span class="badge" :class="r.estadoPago === 'pagado' ? 'disponible' : 'nodisponible'">{{ r.estadoPago }}</span></td>
-              <td class="actions">
-                <button class="btn-edit" @click="openEditReserva(r)">✏️ Editar</button>
-                <button class="btn-delete" @click="confirmDelete('reserva', r.idReserva)">🗑️ Eliminar</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+            <!-- TABLA MESAS -->
+            <table v-if="currentTab === 'mesas'">
+              <thead>
+                <tr>
+                  <th>ID Mesa</th>
+                  <th>Capacidad</th>
+                  <th>Ubicación</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="m in mesas" :key="m.idMesa">
+                  <td><strong>#{{ m.idMesa }}</strong></td>
+                  <td>{{ m.capacidad }} personas</td>
+                  <td>{{ m.ubicacion }}</td>
+                  <td>
+                    <span class="badge" :class="m.disponible ? 'disponible' : 'nodisponible'">
+                      {{ m.disponible ? 'Disponible' : 'Ocupada' }}
+                    </span>
+                  </td>
+                  <td class="actions">
+                    <button class="btn-edit" @click="openEditMesa(m)">✏️ Editar</button>
+                    <button class="btn-delete" @click="confirmDelete('mesa', m.idMesa)">🗑️ Eliminar</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <!-- TABLA RESERVAS -->
+            <table v-if="currentTab === 'reservas'">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Mesa</th>
+                  <th>Fecha</th>
+                  <th>Hora</th>
+                  <th>Personas</th>
+                  <th>Fianza</th>
+                  <th>Estado Pago</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="r in reservas" :key="r.idReserva">
+                  <td>{{ r.idReserva }}</td>
+                  <td>Mesa {{ r.idMesa }}</td>
+                  <td>{{ r.fecha }}</td>
+                  <td>{{ r.hora }}</td>
+                  <td>{{ r.numPersonas }}</td>
+                  <td>{{ r.fianza }}€</td>
+                  <td><span class="badge" :class="r.estadoPago === 'pagado' ? 'disponible' : 'nodisponible'">{{ r.estadoPago }}</span></td>
+                  <td class="actions">
+                    <button class="btn-edit" @click="openEditReserva(r)">✏️ Editar</button>
+                    <button class="btn-delete" @click="confirmDelete('reserva', r.idReserva)">🗑️ Eliminar</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </div>
 
-    <!-- ═══════════════════════════════════
-         MODAL EDITAR / CREAR USUARIO
-    ═══════════════════════════════════ -->
+    <!-- ═══ MODAL EDITAR / CREAR USUARIO ═══ -->
     <div v-if="modalUsuario" class="modal-overlay" @click.self="modalUsuario = false">
       <div class="modal">
         <h2>Editar Usuario</h2>
@@ -177,9 +180,7 @@
       </div>
     </div>
 
-    <!-- ═══════════════════════════════════
-         MODAL EDITAR / CREAR PRODUCTO
-    ═══════════════════════════════════ -->
+    <!-- ═══ MODAL EDITAR / CREAR PRODUCTO ═══ -->
     <div v-if="modalProducto" class="modal-overlay" @click.self="modalProducto = false">
       <div class="modal">
         <h2>{{ editingProducto.idProducto ? 'Editar Producto' : 'Nuevo Producto' }}</h2>
@@ -213,9 +214,7 @@
       </div>
     </div>
 
-    <!-- ═══════════════════════════════════
-         MODAL EDITAR / CREAR MESA
-    ═══════════════════════════════════ -->
+    <!-- ═══ MODAL EDITAR / CREAR MESA ═══ -->
     <div v-if="modalMesa" class="modal-overlay" @click.self="modalMesa = false">
       <div class="modal">
         <h2>{{ editingMesa.idMesa ? 'Editar Mesa #' + editingMesa.idMesa : 'Nueva Mesa' }}</h2>
@@ -241,9 +240,7 @@
       </div>
     </div>
 
-    <!-- ═══════════════════════════════════
-         MODAL EDITAR / CREAR RESERVA
-    ═══════════════════════════════════ -->
+    <!-- ═══ MODAL EDITAR / CREAR RESERVA ═══ -->
     <div v-if="modalReserva" class="modal-overlay" @click.self="modalReserva = false">
       <div class="modal">
         <h2>{{ editingReserva.idReserva ? 'Editar Reserva #' + editingReserva.idReserva : 'Nueva Reserva' }}</h2>
@@ -282,9 +279,7 @@
       </div>
     </div>
 
-    <!-- ═══════════════════════════════════
-         MODAL CONFIRMACIÓN ELIMINAR
-    ═══════════════════════════════════ -->
+    <!-- ═══ MODAL CONFIRMACIÓN ELIMINAR ═══ -->
     <div v-if="deleteConfirm.show" class="modal-overlay">
       <div class="modal modal-sm">
         <div class="delete-icon">🗑️</div>
@@ -297,8 +292,10 @@
       </div>
     </div>
 
-    <!-- TOAST NOTIFICACIÓN -->
+    <!-- TOAST -->
     <div v-if="toast.show" :class="['toast', toast.type]">{{ toast.msg }}</div>
+
+    <Footer />
   </div>
 </template>
 
@@ -307,6 +304,8 @@ import { ref, watch } from "vue";
 import { getAuth, signOut, deleteUser } from "firebase/auth";
 import { getFirestore, collection, query, where, getDocs, deleteDoc } from "firebase/firestore";
 import { useRouter } from "vue-router";
+import Cabecera from "./Cabecera.vue";
+import Footer from "./Footer.vue";
 
 const API = "/api";
 const router = useRouter();
@@ -506,31 +505,65 @@ const confirmDelete = (type, id) => {
   deleteConfirm.value = { show: true, type, id };
 };
 
-// Busca el usuario en Firestore por email y borra su documento
+const deleteApi = async (url, { ignoreNotFound = false } = {}) => {
+  const res = await fetch(url, { method: "DELETE" });
+  if (ignoreNotFound && res.status === 404) return;
+  if (!res.ok) {
+    const msg = await res.text().catch(() => "");
+    throw new Error(msg || `Error ${res.status} al eliminar ${url}`);
+  }
+};
+
+const fetchApiList = async (entity, filter = "") => {
+  const url = filter
+      ? `${API}/${entity}?$filter=${encodeURIComponent(filter)}`
+      : `${API}/${entity}`;
+  const res = await fetch(url);
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.value || data || [];
+};
+
+const deleteUsuarioRelations = async (idUsuario) => {
+  const id = Number(idUsuario);
+  const [reservasUsuario, cliente, empleado, cocinero, administrador] = await Promise.all([
+    fetchApiList("Reserva", `idUsuario eq ${id}`),
+    fetchApiList("Cliente", `idUsuario eq ${id}`),
+    fetchApiList("Empleado", `idUsuario eq ${id}`),
+    fetchApiList("Cocinero", `idUsuario eq ${id}`),
+    fetchApiList("Administrador", `idUsuario eq ${id}`)
+  ]);
+
+  await Promise.all(reservasUsuario.map(r => deleteApi(`${API}/Reserva/idReserva/${r.idReserva}`)));
+  if (cocinero.length) await deleteApi(`${API}/Cocinero/idUsuario/${id}`);
+  if (administrador.length) await deleteApi(`${API}/Administrador/idUsuario/${id}`);
+  if (empleado.length) await deleteApi(`${API}/Empleado/idUsuario/${id}`);
+  if (cliente.length) await deleteApi(`${API}/Cliente/idUsuario/${id}`);
+};
+
+const cleanupFirebaseUser = async (email) => {
+  if (!email) return;
+  await deleteFromFirestore(email);
+  await deleteFromFirebaseAuth(email);
+};
+
 async function deleteFromFirestore(email) {
   try {
     const db = getFirestore();
     const q = query(collection(db, "usuarios"), where("email", "==", email));
     const snap = await getDocs(q);
-    const deletes = snap.docs.map(d => deleteDoc(d.ref));
-    await Promise.all(deletes);
-    console.log("Firestore: documento eliminado para", email);
+    await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
   } catch (e) {
     console.warn("Firestore: no se pudo eliminar el documento", e);
   }
 }
 
-// Borra el usuario de Firebase Auth (solo funciona si es el usuario actualmente logueado)
 async function deleteFromFirebaseAuth(email) {
   try {
     const auth = getAuth();
     const currentUser = auth.currentUser;
-    // Solo se puede borrar si el email coincide con el usuario actual
     if (currentUser && currentUser.email === email) {
       await deleteUser(currentUser);
-      console.log("Firebase Auth: usuario eliminado");
-    } else {
-      console.warn("Firebase Auth: no se puede borrar otro usuario desde el cliente. Usa Firebase Admin SDK en backend.");
     }
   } catch (e) {
     console.warn("Firebase Auth: error al eliminar", e);
@@ -547,455 +580,382 @@ const executeDelete = async () => {
   };
 
   try {
-    // 1. Si es usuario, borramos también de Firebase
+    let usuarioEmail = "";
     if (type === "usuario") {
       const usuario = usuarios.value.find(u => u.idUsuario === id);
-      if (usuario?.email) {
-        await deleteFromFirestore(usuario.email);
-        await deleteFromFirebaseAuth(usuario.email);
-      }
+      usuarioEmail = usuario?.email || "";
+      await deleteUsuarioRelations(id);
     }
 
-    // 2. Borramos de la BD (MySQL vía DAB)
-    const res = await fetch(`${API}/${endpointMap[type]}/${id}`, { method: "DELETE" });
-    if (!res.ok) throw new Error();
-
+    await deleteApi(`${API}/${endpointMap[type]}/${id}`);
     deleteConfirm.value.show = false;
     showToast("Registro eliminado correctamente.");
     refresh();
-  } catch {
+
+    if (type === "usuario" && usuarioEmail) {
+      cleanupFirebaseUser(usuarioEmail);
+    }
+  } catch (e) {
+    console.error("Error al eliminar:", e);
     deleteConfirm.value.show = false;
     showToast("No se pudo eliminar el registro.", "error");
   }
-};
-
-const handleLogout = () => {
-  signOut(getAuth());
-  router.push("/login");
 };
 </script>
 
 <style scoped>
 @import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Montserrat:wght@400;600&display=swap");
 
-.nav-logo {
-  font-family: "Cormorant Garamond", serif;
-  font-size: 1.7rem;
-  font-weight: 600;
-  color: var(--cream, #f5f0e8);
-  letter-spacing: 0.06em;
-  text-decoration: none;
-}
-
-.nav-logo span {
-  color: var(--gold, #c9963a);
-  font-style: italic;
-}
-/* ── RESET TOTAL SCOPED ── */
-.admin-container { all: initial; }
-
-.admin-container,
-.admin-container * {
-  box-sizing: border-box !important;
-  font-family: "Montserrat", sans-serif;
-}
-
-/* ── LAYOUT ── */
-.admin-container {
-  display: flex !important;
-  flex-direction: row !important;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
+/* ── WRAPPER: ocupa el espacio bajo el NavBar ── */
+.admin-wrapper {
+  padding-top: 72px; /* altura del NavBar fijo */
+  min-height: 100vh;
   background: #fdfbf9;
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 1;
+  box-sizing: border-box;
+}
+
+/* ── LAYOUT: sidebar + contenido ── */
+.admin-container {
+  display: flex;
+  min-height: calc(100vh - 72px);
 }
 
 /* ── SIDEBAR ── */
 .admin-sidebar {
-  width: 240px !important;
-  min-width: 240px !important;
-  max-width: 240px !important;
-  flex-shrink: 0 !important;
-  height: 100vh !important;
-  background: #1a1410 !important;
-  color: #f5f0e8 !important;
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: stretch !important;
-  justify-content: flex-start !important;
-  padding: 2rem 1rem !important;
-  position: relative !important;
-  z-index: 10 !important;
-  overflow: hidden !important;
+  width: 220px;
+  min-width: 220px;
+  background: #1a1410;
+  display: flex;
+  flex-direction: column;
+  padding: 2rem 0;
+  position: sticky;
+  top: 72px;
+  height: calc(100vh - 72px);
+  overflow-y: auto;
 }
 
-.sidebar-logo {
-  font-family: "Cormorant Garamond", serif !important;
-  font-size: 1.8rem !important;
-  text-align: center !important;
-  color: #f5f0e8 !important;
-  letter-spacing: 1px !important;
-  padding-bottom: 1.5rem !important;
-  margin-bottom: 1rem !important;
-  border-bottom: 1px solid rgba(255,255,255,0.1) !important;
-  display: block !important;
-  width: 100% !important;
-  position: static !important;
-  float: none !important;
-  flex-shrink: 0 !important;
-  line-height: 1.3 !important;
-}
-.sidebar-logo span { color: #c9963a !important; }
-
-/* ── NAV (ACTUALIZADO) ── */
 .sidebar-nav {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: stretch !important;
-  gap: 4px !important;
-  width: 100% !important;
-  flex: 1 !important;
-  overflow-y: auto !important;
-  position: static !important;
-  /* Eliminamos padding lateral del contenedor para que el hover llegue al borde */
-  margin: 0 -1rem !important; 
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
 }
 
 .sidebar-nav button {
-  all: unset !important;
-  box-sizing: border-box !important;
-  display: flex !important;
-  align-items: center !important;
-  width: 100% !important;
-  /* Aumentamos el padding lateral para compensar el margen negativo del contenedor */
-  padding: 12px 24px !important; 
-  border-radius: 0 !important; /* Cambiado a 0 para que cubra de borde a borde rectamente */
-  font-family: "Montserrat", sans-serif !important;
-  font-size: 0.88rem !important;
-  color: #a89880 !important;
-  cursor: pointer !important;
-  transition: all 0.3s ease !important;
-  position: relative !important;
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 12px 24px;
+  font-family: "Montserrat", sans-serif;
+  font-size: 0.88rem;
+  color: #a89880;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-left: 3px solid transparent;
 }
 
 .sidebar-nav button.active {
-  color: #fff !important;
-  font-weight: 600 !important;
+  color: #fff;
+  font-weight: 600;
+  border-left-color: #c9963a;
+  background: rgba(201, 150, 58, 0.1);
 }
 
 .sidebar-nav button:hover:not(.active) {
-  
-  color: #f5f0e8 !important;
-  padding-left: 30px !important; /* Efecto sutil de desplazamiento al entrar */
-}
-
-/* ── LOGOUT ── */
-.btn-logout {
-  all: unset !important;
-  box-sizing: border-box !important;
-  display: block !important;
-  width: 100% !important;
-  flex-shrink: 0 !important;
-  background: transparent !important;
-  border: 1px solid rgba(255,255,255,0.12) !important;
-  color: #888 !important;
-  padding: 10px !important;
-  border-radius: 7px !important;
-  cursor: pointer !important;
-  font-family: "Montserrat", sans-serif !important;
-  font-size: 0.85rem !important;
-  text-align: center !important;
-  margin-top: 0.75rem !important;
-  transition: all 0.2s !important;
-}
-.btn-logout:hover {
-  background: rgba(211,47,47,0.15) !important;
-  color: #ef9a9a !important;
-  border-color: rgba(211,47,47,0.4) !important;
+  color: #f5f0e8;
+  background: rgba(255, 255, 255, 0.05);
+  padding-left: 30px;
 }
 
 /* ── MAIN ── */
 .admin-main {
-  flex: 1 !important;
-  min-width: 0 !important;
-  height: 100vh !important;
-  overflow-y: auto !important;
-  padding: 2.5rem 3rem !important;
-  background: #fdfbf9 !important;
-  display: block !important;
+  flex: 1;
+  min-width: 0;
+  padding: 2.5rem 3rem;
+  background: #fdfbf9;
 }
 
 .admin-header {
-  display: flex !important;
-  justify-content: space-between !important;
-  align-items: center !important;
-  margin-bottom: 2rem !important;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
 }
 
 .admin-header h1 {
-  font-family: "Cormorant Garamond", serif !important;
-  font-size: 2.4rem !important;
-  color: #1a1410 !important;
-  margin: 0 !important;
-  line-height: 1.2 !important;
+  font-family: "Cormorant Garamond", serif;
+  font-size: 2.2rem;
+  color: #1a1410;
+  margin: 0;
+  line-height: 1.2;
 }
 
 .btn-add {
-  flex-shrink: 0 !important;
-  background: #c9963a !important;
-  color: white !important;
-  border: none !important;
-  padding: 10px 22px !important;
-  border-radius: 6px !important;
-  font-family: "Montserrat", sans-serif !important;
-  font-weight: 600 !important;
-  font-size: 0.88rem !important;
-  cursor: pointer !important;
-  white-space: nowrap !important;
+  background: #c9963a;
+  color: white;
+  border: none;
+  padding: 10px 22px;
+  border-radius: 6px;
+  font-family: "Montserrat", sans-serif;
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
-.btn-add:hover { background: #b8852e !important; }
+.btn-add:hover { background: #b8852e; }
 
 /* ── CARD + TABLA ── */
 .admin-card {
-  background: white !important;
-  border-radius: 10px !important;
-  border: 1px solid #f0ebe4 !important;
-  box-shadow: 0 4px 25px rgba(0,0,0,0.04) !important;
-  overflow: hidden !important;
+  background: white;
+  border-radius: 10px;
+  border: 1px solid #f0ebe4;
+  box-shadow: 0 4px 25px rgba(0,0,0,0.04);
+  overflow: hidden;
 }
 
-.table-wrapper { overflow-x: auto !important; }
+.table-wrapper { overflow-x: auto; }
 
 table {
-  width: 100% !important;
-  border-collapse: collapse !important;
-  min-width: 580px !important;
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 580px;
 }
 
-thead tr { background: #fcfaf8 !important; }
+thead tr { background: #fcfaf8; }
 
 th {
-  padding: 0.9rem 1.2rem !important;
-  text-align: left !important;
-  font-size: 0.7rem !important;
-  text-transform: uppercase !important;
-  letter-spacing: 1.2px !important;
-  color: #8a735a !important;
-  border-bottom: 2px solid #f0ebe4 !important;
-  white-space: nowrap !important;
-  font-weight: 600 !important;
+  padding: 0.9rem 1.2rem;
+  text-align: left;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: #8a735a;
+  border-bottom: 2px solid #f0ebe4;
+  white-space: nowrap;
+  font-weight: 600;
 }
 
 td {
-  padding: 0.9rem 1.2rem !important;
-  border-bottom: 1px solid #f5f0ea !important;
-  font-size: 0.88rem !important;
-  color: #3a3830 !important;
-  vertical-align: middle !important;
+  padding: 0.9rem 1.2rem;
+  border-bottom: 1px solid #f5f0ea;
+  font-size: 0.88rem;
+  color: #3a3830;
+  vertical-align: middle;
 }
 
-tbody tr:last-child td { border-bottom: none !important; }
-tbody tr:hover { background: #fdfaf7 !important; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: #fdfaf7; }
 
 .td-desc {
-  max-width: 200px !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  white-space: nowrap !important;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ── BADGES ── */
 .badge {
-  display: inline-block !important;
-  padding: 3px 10px !important;
-  border-radius: 20px !important;
-  font-size: 0.72rem !important;
-  font-weight: 600 !important;
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 600;
 }
-.badge.disponible   { background: #e8f5e9 !important; color: #2e7d32 !important; }
-.badge.nodisponible { background: #ffebee !important; color: #c62828 !important; }
-.badge.admin        { background: #fff1f1 !important; color: #d32f2f !important; }
-.badge.empleado     { background: #e3f2fd !important; color: #1565c0 !important; }
-.badge.cliente      { background: #f3e5f5 !important; color: #6a1b9a !important; }
-.badge.pendiente    { background: #fff8e1 !important; color: #e65100 !important; }
-.badge.pagado       { background: #e8f5e9 !important; color: #2e7d32 !important; }
-.badge.cancelado    { background: #ffebee !important; color: #c62828 !important; }
+.badge.disponible   { background: #e8f5e9; color: #2e7d32; }
+.badge.nodisponible { background: #ffebee; color: #c62828; }
+.badge.admin        { background: #fff1f1; color: #d32f2f; }
+.badge.empleado     { background: #e3f2fd; color: #1565c0; }
+.badge.cliente      { background: #f3e5f5; color: #6a1b9a; }
+.badge.pendiente    { background: #fff8e1; color: #e65100; }
+.badge.pagado       { background: #e8f5e9; color: #2e7d32; }
+.badge.cancelado    { background: #ffebee; color: #c62828; }
 
 /* ── ACCIONES ── */
 .actions {
-  display: flex !important;
-  gap: 6px !important;
-  align-items: center !important;
+  display: flex;
+  gap: 6px;
+  align-items: center;
 }
 
 .btn-edit,
 .btn-delete {
-  all: unset !important;
-  box-sizing: border-box !important;
-  border: 1px solid #e8e3dc !important;
-  padding: 5px 12px !important;
-  border-radius: 5px !important;
-  cursor: pointer !important;
-  font-size: 0.78rem !important;
-  font-weight: 600 !important;
-  font-family: "Montserrat", sans-serif !important;
-  white-space: nowrap !important;
-  background: #f8f6f3 !important;
-  color: #5a5040 !important;
+  border: 1px solid #e8e3dc;
+  padding: 5px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: "Montserrat", sans-serif;
+  white-space: nowrap;
+  background: #f8f6f3;
+  color: #5a5040;
 }
-.btn-edit:hover   { background: #eef2ff !important; color: #3f51b5 !important; border-color: #c5cae9 !important; }
-.btn-delete:hover { background: #fff0f0 !important; color: #d32f2f !important; border-color: #ffcdd2 !important; }
+.btn-edit:hover   { background: #eef2ff; color: #3f51b5; border-color: #c5cae9; }
+.btn-delete:hover { background: #fff0f0; color: #d32f2f; border-color: #ffcdd2; }
 
 /* ── MENSAJES ── */
 .state-msg {
-  padding: 4rem !important;
-  text-align: center !important;
-  color: #8a735a !important;
-  font-size: 0.95rem !important;
+  padding: 4rem;
+  text-align: center;
+  color: #8a735a;
+  font-size: 0.95rem;
 }
-.state-msg.error { color: #d32f2f !important; }
+.state-msg.error { color: #d32f2f; }
 
 /* ── MODALES ── */
 .modal-overlay {
-  position: fixed !important;
-  inset: 0 !important;
-  background: rgba(20,14,10,0.7) !important;
-  backdrop-filter: blur(3px) !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  z-index: 9999 !important;
+  position: fixed;
+  inset: 0;
+  background: rgba(20,14,10,0.7);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
 }
 
 .modal {
-  background: white !important;
-  padding: 2.5rem !important;
-  border-radius: 12px !important;
-  width: 90% !important;
-  max-width: 460px !important;
-  max-height: 90vh !important;
-  overflow-y: auto !important;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.2) !important;
+  background: white;
+  padding: 2.5rem;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 460px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
 }
 
 .modal h2 {
-  font-family: "Cormorant Garamond", serif !important;
-  font-size: 1.6rem !important;
-  color: #1a1410 !important;
-  margin-bottom: 1.5rem !important;
+  font-family: "Cormorant Garamond", serif;
+  font-size: 1.6rem;
+  color: #1a1410;
+  margin-bottom: 1.5rem;
 }
 
-.modal-sm { max-width: 380px !important; text-align: center !important; }
-.modal-sm p { color: #666 !important; margin-top: 0.4rem !important; font-size: 0.9rem !important; }
-.delete-icon { font-size: 2.5rem !important; }
+.modal-sm { max-width: 380px; text-align: center; }
+.modal-sm p { color: #666; margin-top: 0.4rem; font-size: 0.9rem; }
+.delete-icon { font-size: 2.5rem; }
 
-.form-group { margin-bottom: 1.2rem !important; }
+.form-group { margin-bottom: 1.2rem; }
 
 .form-group label {
-  display: block !important;
-  font-size: 0.73rem !important;
-  font-weight: 600 !important;
-  color: #6b4c2a !important;
-  margin-bottom: 6px !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.5px !important;
+  display: block;
+  font-size: 0.73rem;
+  font-weight: 600;
+  color: #6b4c2a;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .form-group input,
 .form-group select,
 .form-group textarea {
-  width: 100% !important;
-  padding: 10px 14px !important;
-  border: 1px solid #ddd !important;
-  border-radius: 6px !important;
-  font-size: 0.9rem !important;
-  font-family: "Montserrat", sans-serif !important;
-  color: #1a1410 !important;
-  background: white !important;
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-family: "Montserrat", sans-serif;
+  color: #1a1410;
+  background: white;
+  box-sizing: border-box;
 }
 
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
-  outline: none !important;
-  border-color: #c9963a !important;
-  box-shadow: 0 0 0 3px rgba(201,150,58,0.1) !important;
+  outline: none;
+  border-color: #c9963a;
+  box-shadow: 0 0 0 3px rgba(201,150,58,0.1);
 }
 
-.form-group textarea { resize: vertical !important; }
-.input-disabled { background: #f5f5f5 !important; color: #999 !important; cursor: not-allowed !important; }
+.form-group textarea { resize: vertical; }
+.input-disabled { background: #f5f5f5; color: #999; cursor: not-allowed; }
 
 .modal-actions {
-  display: flex !important;
-  justify-content: flex-end !important;
-  gap: 10px !important;
-  margin-top: 1.8rem !important;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 1.8rem;
 }
 
 .btn-cancel {
-  all: unset !important;
-  box-sizing: border-box !important;
-  background: #f5f0e8 !important;
-  padding: 10px 20px !important;
-  border-radius: 6px !important;
-  cursor: pointer !important;
-  font-family: "Montserrat", sans-serif !important;
-  font-size: 0.88rem !important;
-  color: #555 !important;
+  background: #f5f0e8;
+  padding: 10px 20px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-family: "Montserrat", sans-serif;
+  font-size: 0.88rem;
+  color: #555;
 }
-.btn-cancel:hover { background: #ede8df !important; }
+.btn-cancel:hover { background: #ede8df; }
 
 .btn-save {
-  all: unset !important;
-  box-sizing: border-box !important;
-  background: #c9963a !important;
-  color: white !important;
-  padding: 10px 22px !important;
-  border-radius: 6px !important;
-  cursor: pointer !important;
-  font-family: "Montserrat", sans-serif !important;
-  font-weight: 600 !important;
-  font-size: 0.88rem !important;
+  background: #c9963a;
+  color: white;
+  padding: 10px 22px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-family: "Montserrat", sans-serif;
+  font-weight: 600;
+  font-size: 0.88rem;
 }
-.btn-save:hover { background: #b8852e !important; }
+.btn-save:hover { background: #b8852e; }
 
 .btn-delete-confirm {
-  all: unset !important;
-  box-sizing: border-box !important;
-  background: #d32f2f !important;
-  color: white !important;
-  padding: 10px 22px !important;
-  border-radius: 6px !important;
-  cursor: pointer !important;
-  font-family: "Montserrat", sans-serif !important;
-  font-weight: 600 !important;
-  font-size: 0.88rem !important;
+  background: #d32f2f;
+  color: white;
+  padding: 10px 22px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-family: "Montserrat", sans-serif;
+  font-weight: 600;
+  font-size: 0.88rem;
 }
-.btn-delete-confirm:hover { background: #b71c1c !important; }
+.btn-delete-confirm:hover { background: #b71c1c; }
 
 /* ── TOAST ── */
 .toast {
-  position: fixed !important;
-  bottom: 2rem !important;
-  right: 2rem !important;
-  padding: 14px 24px !important;
-  border-radius: 8px !important;
-  font-family: "Montserrat", sans-serif !important;
-  font-size: 0.9rem !important;
-  font-weight: 600 !important;
-  z-index: 99999 !important;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.15) !important;
-  animation: slideIn 0.3s ease !important;
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  padding: 14px 24px;
+  border-radius: 8px;
+  font-family: "Montserrat", sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  z-index: 99999;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+  animation: slideIn 0.3s ease;
 }
-.toast.success { background: #2e7d32 !important; color: white !important; }
-.toast.error   { background: #c62828 !important; color: white !important; }
+.toast.success { background: #2e7d32; color: white; }
+.toast.error   { background: #c62828; color: white; }
 
 @keyframes slideIn {
   from { opacity: 0; transform: translateY(20px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 768px) {
+  .admin-container { flex-direction: column; }
+  .admin-sidebar {
+    width: 100%;
+    height: auto;
+    position: static;
+    flex-direction: row;
+    padding: 0.5rem;
+    overflow-x: auto;
+  }
+  .sidebar-nav { flex-direction: row; gap: 0; }
+  .sidebar-nav button { padding: 10px 16px; border-left: none; border-bottom: 3px solid transparent; white-space: nowrap; }
+  .sidebar-nav button.active { border-left-color: transparent; border-bottom-color: #c9963a; }
+  .admin-main { padding: 1.5rem; }
 }
 </style>

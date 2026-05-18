@@ -92,7 +92,7 @@ onUnmounted(() => {
           <RouterLink
             v-if="esAdmin"
             to="/administracion"
-            class="nav-dropdown-item"
+            class="nav-dropdown-item nav-logout"
             @click="menuAbierto = false"
           >
             ⚙️ Administración
@@ -249,7 +249,10 @@ nav.scrolled {
   overflow: hidden;
   z-index: 200;
 }
-.nav-dropdown-item {
+.nav-dropdown-item,
+.nav-dropdown .nav-dropdown-item,
+a.nav-dropdown-item,
+a.nav-dropdown-item.router-link-active {
   display: block;
   width: 100%;
   padding: 12px 18px;
@@ -257,7 +260,7 @@ nav.scrolled {
   font-size: 0.7rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--dark, #1a1410);
+  color: var(--dark, #1a1410) !important;
   text-decoration: none;
   background: transparent;
   border: none;
@@ -267,9 +270,14 @@ nav.scrolled {
     background 0.2s,
     color 0.2s;
 }
-.nav-dropdown-item:hover {
+.nav-dropdown-item::after,
+a.nav-dropdown-item::after {
+  display: none !important;
+}
+.nav-dropdown-item:hover,
+a.nav-dropdown-item:hover {
   background: rgba(201, 150, 58, 0.12);
-  color: var(--gold, #c9963a);
+  color: var(--gold, #c9963a) !important;
 }
 .nav-logout {
   border-top: 1px solid rgba(201, 150, 58, 0.15);

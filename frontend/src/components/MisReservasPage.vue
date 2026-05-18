@@ -123,25 +123,25 @@
                 >
                   <button
                     class="btn-accion btn-editar"
-                    @click="abrirEdicion(reserva)"
                     :disabled="isPasada(reserva.fecha)"
                     :title="
                       isPasada(reserva.fecha)
                         ? 'No se pueden editar reservas pasadas'
                         : 'Editar reserva'
                     "
+                    @click="abrirEdicion(reserva)"
                   >
                     ✏️ Editar
                   </button>
                   <button
                     class="btn-accion btn-cancelar"
-                    @click="pedirCancelacion(reserva)"
                     :disabled="isPasada(reserva.fecha)"
                     :title="
                       isPasada(reserva.fecha)
                         ? 'No se pueden cancelar reservas pasadas'
                         : 'Cancelar reserva'
                     "
+                    @click="pedirCancelacion(reserva)"
                   >
                     ✕ Cancelar
                   </button>
@@ -224,7 +224,7 @@
                 String(reservaAeditar?.idReserva).slice(-6).toUpperCase()
               }}</span
             >
-            <h3 class="modal-title-left">Modificar<br /><em>reserva</em></h3>
+            <h3 class="modal-title-left">Cambiar fecha<br /><em>y mesa</em></h3>
           </div>
 
           <!-- ── FECHA ── -->
@@ -279,50 +279,9 @@
             </div>
           </div>
 
-          <!-- ── HORA ── -->
+          <!-- ── MESA ── -->
           <div class="edit-seccion" v-if="fechaEditSeleccionada">
-            <label class="form-label">Hora de la reserva</label>
-            <div class="horas-grid">
-              <button
-                v-for="h in horasDisponibles"
-                :key="h"
-                class="hora-btn"
-                :class="{ selected: horaEditSeleccionada === h }"
-                @click="horaEditSeleccionada = h"
-              >
-                {{ h }}
-              </button>
-            </div>
-          </div>
-
-          <!-- ── NÚMERO DE PERSONAS ── -->
-          <div class="edit-seccion" v-if="fechaEditSeleccionada">
-            <label class="form-label">Número de comensales</label>
-            <div class="personas-selector">
-              <button
-                class="personas-btn"
-                @click="editPersonas > 1 && editPersonas--"
-              >
-                −
-              </button>
-              <div class="personas-display">
-                <span class="personas-num">{{ editPersonas }}</span>
-                <span class="personas-label">{{
-                  editPersonas === 1 ? "persona" : "personas"
-                }}</span>
-              </div>
-              <button
-                class="personas-btn"
-                @click="editPersonas < 12 && editPersonas++"
-              >
-                +
-              </button>
-            </div>
-          </div>
-
-          <!-- ── UBICACIÓN ── -->
-          <div class="edit-seccion" v-if="fechaEditSeleccionada">
-            <label class="form-label">¿Dónde prefieres sentarte?</label>
+            <label class="form-label">&iquest;D&oacute;nde prefieres sentarte?</label>
             <div class="ubicacion-cards">
               <button
                 class="ubicacion-card"
@@ -332,13 +291,10 @@
                   mesaEditSeleccionada = null;
                 "
               >
-                <div class="ubicacion-icon">🏠</div>
+                <div class="ubicacion-icon">&#127968;</div>
                 <h3>Interior</h3>
-                <p>
-                  Ambiente íntimo con decoración andaluza, climatizado todo el
-                  año.
-                </p>
-                <div class="ubicacion-check">✓</div>
+                <p>Ambiente &iacute;ntimo con decoraci&oacute;n andaluza, climatizado todo el a&ntilde;o.</p>
+                <div class="ubicacion-check">&#10003;</div>
               </button>
               <button
                 class="ubicacion-card"
@@ -348,23 +304,14 @@
                   mesaEditSeleccionada = null;
                 "
               >
-                <div class="ubicacion-icon">🌿</div>
+                <div class="ubicacion-icon">&#127807;</div>
                 <h3>Terraza exterior</h3>
-                <p>
-                  Bajo el cielo de Granada. Disponible según condiciones
-                  meteorológicas.
-                </p>
-                <div class="ubicacion-check">✓</div>
+                <p>Bajo el cielo de Granada. Disponible seg&uacute;n condiciones meteorol&oacute;gicas.</p>
+                <div class="ubicacion-check">&#10003;</div>
               </button>
             </div>
-          </div>
 
-          <!-- ── MESA ── -->
-          <div
-            class="edit-seccion"
-            v-if="fechaEditSeleccionada && ubicacionEdit"
-          >
-            <label class="form-label">Mesa</label>
+            <label class="form-label">Selecciona mesa</label>
             <div class="disponibilidad-info">
               <div class="disp-badge" :class="disponibilidadEdit.clase">
                 <span class="disp-dot"></span>
@@ -380,9 +327,9 @@
                   selected: mesaEditSeleccionada === mesa.idMesa,
                   ocupada: !mesa.disponible,
                   insuficiente:
-                    mesa.disponible && mesa.capacidad < editPersonas,
+                    mesa.disponible && mesa.capacidad < (reservaAeditar?.numPersonas || 1),
                 }"
-                :disabled="!mesa.disponible || mesa.capacidad < editPersonas"
+                :disabled="!mesa.disponible || mesa.capacidad < (reservaAeditar?.numPersonas || 1)"
                 @click="mesaEditSeleccionada = mesa.idMesa"
               >
                 <span class="mesa-icon">🪑</span>
@@ -392,7 +339,7 @@
                   {{ mesa.capacidad === 1 ? "persona" : "personas" }}</span
                 >
                 <span v-if="!mesa.disponible" class="mesa-tag">Ocupada</span>
-                <span v-else-if="mesa.capacidad < editPersonas" class="mesa-tag"
+                <span v-else-if="mesa.capacidad < (reservaAeditar?.numPersonas || 1)" class="mesa-tag"
                   >Pequeña</span
                 >
               </button>
@@ -475,25 +422,7 @@ export default {
 
       // Campos editables
       mesaEditSeleccionada: null,
-      horaEditSeleccionada: null,
-      editPersonas: 2,
       ubicacionEdit: null,
-
-      // Horas disponibles (igual que en ReservasPage)
-      horasDisponibles: [
-        "13:00",
-        "13:30",
-        "14:00",
-        "14:30",
-        "15:00",
-        "15:30",
-        "20:00",
-        "20:30",
-        "21:00",
-        "21:30",
-        "22:00",
-        "22:30",
-      ],
 
       // Datos BD
       todasLasMesas: [],
@@ -545,9 +474,11 @@ export default {
         )
         .map((r) => r.idMesa);
       return this.todasLasMesas
-        .filter(
-          (m) => !this.ubicacionEdit || m.ubicacion === this.ubicacionEdit,
-        )
+        .filter((m) => {
+          const ubUsuario = (this.ubicacionEdit || "").toLowerCase();
+          const ubMesa = (m.ubicacion || "").toLowerCase();
+          return !ubUsuario || ubMesa === ubUsuario;
+        })
         .map((m) => ({
           ...m,
           disponible: !!m.disponible && !mesasOcupadasIds.includes(m.idMesa),
@@ -576,8 +507,7 @@ export default {
     puedeGuardarEdit() {
       return (
         !!this.fechaEditSeleccionada &&
-        !!this.mesaEditSeleccionada &&
-        !!this.horaEditSeleccionada
+        !!this.mesaEditSeleccionada
       );
     },
   },
@@ -588,6 +518,7 @@ export default {
       this.mesaEditSeleccionada = null;
       await this.cargarReservasDelDiaEdit();
     },
+
   },
 
   mounted() {
@@ -763,19 +694,13 @@ export default {
       this.reservaAeditar = reserva;
       this.fechaEditSeleccionada = null;
       this.mesaEditSeleccionada = null;
+      this.ubicacionEdit = null;
       this.reservasDelDiaEdit = [];
 
-      // Pre-rellenar campos con los valores actuales
-      this.horaEditSeleccionada = reserva.hora
-        ? String(reserva.hora).substring(0, 5)
-        : null;
-      this.editPersonas = reserva.numPersonas || 2;
-
-      // Pre-rellenar ubicación desde la mesa actual
       const mesaActual = this.todasLasMesas.find(
         (m) => m.idMesa === reserva.idMesa,
       );
-      this.ubicacionEdit = mesaActual?.ubicacion || null;
+      this.ubicacionEdit = mesaActual?.ubicacion?.toLowerCase() || null;
 
       const f = new Date(reserva.fecha);
       this.mesVistaEdit = new Date(f.getUTCFullYear(), f.getUTCMonth(), 1);
@@ -789,7 +714,6 @@ export default {
       this.reservaAeditar = null;
       this.fechaEditSeleccionada = null;
       this.mesaEditSeleccionada = null;
-      this.horaEditSeleccionada = null;
       this.ubicacionEdit = null;
     },
 
@@ -887,8 +811,6 @@ export default {
         const body = {
           fecha: this.fechaEditISO,
           idMesa: this.mesaEditSeleccionada,
-          hora: this.horaEditSeleccionada,
-          numPersonas: this.editPersonas,
         };
 
         const res = await fetch(
@@ -907,8 +829,6 @@ export default {
         if (idx !== -1) {
           this.reservas[idx].fecha = this.fechaEditISO;
           this.reservas[idx].idMesa = this.mesaEditSeleccionada;
-          this.reservas[idx].hora = this.horaEditSeleccionada;
-          this.reservas[idx].numPersonas = this.editPersonas;
         }
 
         this.cerrarEdicion();

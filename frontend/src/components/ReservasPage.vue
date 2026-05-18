@@ -505,7 +505,7 @@ export default {
       pagando: false,
       referencia: "",
 
-      fianzaPorPersona: 10,
+      fianzaPorPersona: 2.5,
     };
   },
 
