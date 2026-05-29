@@ -1028,59 +1028,66 @@ export default {
 /* HERO */
 .hero {
   position: relative;
-  height: 42vh;
-  min-height: 280px;
+  height: 48vh;
+  min-height: 390px;
   display: flex;
   align-items: center;
+  justify-content: center;
   overflow: hidden;
 }
 .hero-bg {
   position: absolute;
   inset: 0;
-  background: var(--dark);
+  background: url("https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1600&q=80")
+    center/cover no-repeat;
+  transform: scale(1.05);
 }
 .hero-overlay {
   position: absolute;
   inset: 0;
   background: linear-gradient(
-    135deg,
-    rgba(107, 58, 42, 0.35) 0%,
-    transparent 60%
+    160deg,
+    rgba(26, 20, 16, 0.78) 0%,
+    rgba(26, 20, 16, 0.5) 100%
   );
 }
 .hero-content {
   position: relative;
   z-index: 2;
-  padding: 0 6vw;
+  text-align: center;
+  color: var(--cream);
+  padding: 96px 1.5rem 0;
 }
 .hero-eyebrow {
-  font-size: 0.65rem;
-  letter-spacing: 0.35em;
+  font-size: 0.68rem;
+  letter-spacing: 0.3em;
   text-transform: uppercase;
   color: var(--gold);
-  margin-bottom: 0.8rem;
-  font-family: "Jost", sans-serif;
-  font-weight: 400;
+  margin-bottom: 1rem;
+  font-family: "Montserrat", sans-serif;
+  font-weight: 500;
 }
 .hero-title {
   font-family: "Cormorant Garamond", serif;
-  font-size: clamp(3rem, 7vw, 5rem);
+  font-size: clamp(3.25rem, 7vw, 6rem);
   font-weight: 300;
   color: var(--cream);
-  line-height: 1.05;
-  margin-bottom: 1rem;
+  line-height: 1;
+  margin-bottom: 1.2rem;
 }
 .hero-title em {
   color: var(--gold);
   font-style: italic;
 }
 .hero-sub {
-  font-size: 0.88rem;
-  color: rgba(245, 240, 232, 0.55);
-  font-family: "Jost", sans-serif;
+  font-size: 0.9rem;
+  color: rgba(245, 240, 232, 0.82);
+  font-family: "Montserrat", sans-serif;
   font-weight: 300;
-  max-width: 400px;
-  line-height: 1.6;
+  letter-spacing: 0.08em;
+  max-width: 460px;
+  margin: 0 auto;
+  line-height: 1.8;
 }
 
 /* MAIN */

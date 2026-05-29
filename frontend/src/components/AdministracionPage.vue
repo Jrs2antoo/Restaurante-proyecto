@@ -46,7 +46,7 @@
                   <td>{{ u.nombre }}</td>
                   <td>{{ u.apellido }}</td>
                   <td>{{ u.email }}</td>
-                  <td><span class="badge" :class="u.rol">{{ u.rol }}</span></td>
+                  <td><span class="badge" :class="u.rolVisual">{{ u.rolVisual }}</span></td>
                   <td class="actions">
                     <button class="btn-edit" @click="openEditUsuario(u)">✏️ Editar</button>
                     <button class="btn-delete" @click="confirmDelete('usuario', u.idUsuario)">🗑️ Eliminar</button>
@@ -132,9 +132,9 @@
                   <td>{{ r.idReserva }}</td>
                   <td>Mesa {{ r.idMesa }}</td>
                   <td>{{ r.fecha }}</td>
-                  <td>{{ r.hora }}</td>
+                  <td>{{ formatHora(r.hora) }}</td>
                   <td>{{ r.numPersonas }}</td>
-                  <td>{{ r.fianza }}€</td>
+                  <td>{{ formatFianza(r.fianza, r.numPersonas) }}</td>
                   <td><span class="badge" :class="r.estadoPago === 'pagado' ? 'disponible' : 'nodisponible'">{{ r.estadoPago }}</span></td>
                   <td class="actions">
                     <button class="btn-edit" @click="openEditReserva(r)">✏️ Editar</button>
@@ -194,7 +194,11 @@
         </div>
         <div class="form-group">
           <label>Categoría</label>
-          <input v-model="editingProducto.categoria" type="text" placeholder="Ej: Entrante, Principal, Postre..." />
+          <select v-model="editingProducto.categoria">
+            <option v-for="categoria in categoriasProducto" :key="categoria" :value="categoria">
+              {{ categoria }}
+            </option>
+          </select>
         </div>
         <div class="form-group">
           <label>Descripción</label>
@@ -224,7 +228,11 @@
         </div>
         <div class="form-group">
           <label>Ubicación</label>
-          <input v-model="editingMesa.ubicacion" type="text" placeholder="Ej: Terraza, Ventana..." />
+          <select v-model="editingMesa.ubicacion">
+            <option v-for="ubicacion in ubicacionesMesa" :key="ubicacion" :value="ubicacion">
+              {{ ubicacion }}
+            </option>
+          </select>
         </div>
         <div class="form-group">
           <label>Estado</label>
@@ -325,6 +333,19 @@ const tabTitles = {
   mesas: "Configuración de Salón"
 };
 
+const categoriasProducto = [
+  "Entrantes",
+  "Carnes",
+  "Pescados",
+  "Postres",
+  "Bebidas"
+];
+
+const ubicacionesMesa = [
+  "Interior",
+  "Terraza"
+];
+
 const modalUsuario  = ref(false);
 const modalProducto = ref(false);
 const modalMesa     = ref(false);
@@ -342,10 +363,55 @@ const showToast = (msg, type = "success") => {
 };
 
 // ─── CARGA DE DATOS ───────────────────────────────────
+const normalizarFianza = (fianza, personas) => {
+  const importe = Number(fianza);
+  if (!Number.isFinite(importe)) return 0;
+
+  const importeEsperado = Number(personas || 0) * 2.5;
+
+  if (importeEsperado && Math.abs(importe / 10 - importeEsperado) < 0.01) {
+    return importe / 10;
+  }
+
+  return importe;
+};
+
+const formatFianza = (fianza, personas) =>
+  `${normalizarFianza(fianza, personas).toLocaleString("es-ES", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}€`;
+
+const formatHora = (hora) => String(hora || "").substring(0, 5);
+
+const cargarUsuariosConRolVisual = async () => {
+  const [usuariosData, administradoresData] = await Promise.all([
+    fetch(`${API}/Usuario`).then(res => {
+      if (!res.ok) throw new Error();
+      return res.json();
+    }),
+    fetch(`${API}/Administrador`).then(res => res.ok ? res.json() : { value: [] })
+  ]);
+
+  const administradoresIds = new Set(
+    (administradoresData.value || administradoresData || []).map(a => Number(a.idUsuario))
+  );
+
+  usuarios.value = (usuariosData.value || usuariosData || []).map(u => ({
+    ...u,
+    rolVisual: administradoresIds.has(Number(u.idUsuario)) ? "admin" : u.rol
+  }));
+};
+
 const refresh = async () => {
   loading.value = true;
   error.value = "";
   try {
+    if (currentTab.value === 'usuarios') {
+      await cargarUsuariosConRolVisual();
+      return;
+    }
+
     const endpoint = currentTab.value === 'usuarios'  ? 'Usuario'  :
                      currentTab.value === 'productos' ? 'Producto' :
                      currentTab.value === 'reservas'  ? 'Reserva'  : 'Mesa';
@@ -354,7 +420,6 @@ const refresh = async () => {
     if (!res.ok) throw new Error();
     const data = await res.json();
 
-    if (currentTab.value === 'usuarios')  usuarios.value  = data.value || data;
     if (currentTab.value === 'productos') productos.value = data.value || data;
     if (currentTab.value === 'reservas')  reservas.value  = data.value || data;
     if (currentTab.value === 'mesas')     mesas.value     = data.value || data;
@@ -369,30 +434,36 @@ watch(currentTab, refresh, { immediate: true });
 
 // ─── USUARIOS ─────────────────────────────────────────
 const openEditUsuario = (u) => {
-  editingUsuario.value = { ...u };
+  editingUsuario.value = { ...u, rol: u.rolVisual || u.rol };
   modalUsuario.value = true;
 };
 
 const saveUsuario = async () => {
   const { idUsuario, nombre, apellido, rol } = editingUsuario.value;
+  const rolUsuario = rol === "admin" ? "empleado" : rol;
+
   try {
     const res = await fetch(`${API}/Usuario/idUsuario/${idUsuario}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nombre, apellido, rol })
+      body: JSON.stringify({ nombre, apellido, rol: rolUsuario })
     });
-    if (!res.ok) throw new Error();
+    if (!res.ok) throw new Error(await res.text());
+
+    await syncUsuarioRol(idUsuario, rol);
+
     modalUsuario.value = false;
     showToast("Usuario actualizado correctamente.");
     refresh();
-  } catch {
+  } catch (e) {
+    console.error("Error actualizando usuario:", e);
     showToast("Error al actualizar el usuario.", "error");
   }
 };
 
 // ─── PRODUCTOS ────────────────────────────────────────
 const openAddProducto = () => {
-  editingProducto.value = { nombre: "", precio: "", categoria: "", descripcion: "", disponible: true };
+  editingProducto.value = { nombre: "", precio: "", categoria: "Entrantes", descripcion: "", disponible: true };
   modalProducto.value = true;
 };
 
@@ -429,7 +500,7 @@ const saveProducto = async () => {
 
 // ─── MESAS ────────────────────────────────────────────
 const openAddMesa = () => {
-  editingMesa.value = { capacidad: 2, ubicacion: "", disponible: true };
+  editingMesa.value = { capacidad: 2, ubicacion: "Interior", disponible: true };
   modalMesa.value = true;
 };
 
@@ -524,6 +595,69 @@ const fetchApiList = async (entity, filter = "") => {
   return data.value || data || [];
 };
 
+const postApi = async (url, body, { ignoreConflict = false } = {}) => {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (ignoreConflict && (res.status === 409 || res.status === 400)) return;
+  if (!res.ok) {
+    const msg = await res.text().catch(() => "");
+    throw new Error(msg || `Error ${res.status} al crear ${url}`);
+  }
+};
+
+const ensureEmpleado = async (idUsuario, puesto = "mesero") => {
+  const id = Number(idUsuario);
+  const empleado = await fetchApiList("Empleado", `idUsuario eq ${id}`);
+
+  if (empleado.length) {
+    await fetch(`${API}/Empleado/idUsuario/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ puesto }),
+    });
+    return;
+  }
+
+  await postApi(`${API}/Empleado`, { idUsuario: id, puesto }, { ignoreConflict: true });
+};
+
+const ensureAdministrador = async (idUsuario) => {
+  const id = Number(idUsuario);
+  const administrador = await fetchApiList("Administrador", `idUsuario eq ${id}`);
+
+  if (!administrador.length) {
+    await postApi(`${API}/Administrador`, { idUsuario: id }, { ignoreConflict: true });
+  }
+};
+
+const syncUsuarioRol = async (idUsuario, rolVisual) => {
+  if (rolVisual === "admin") {
+    await ensureEmpleado(idUsuario, "administrador");
+    await ensureAdministrador(idUsuario);
+    return;
+  }
+
+  if (rolVisual === "empleado") {
+    await deleteApi(`${API}/Administrador/idUsuario/${Number(idUsuario)}`, { ignoreNotFound: true });
+    await ensureEmpleado(idUsuario, "mesero");
+    return;
+  }
+
+  if (rolVisual === "cliente") {
+    const id = Number(idUsuario);
+    await deleteApi(`${API}/Administrador/idUsuario/${id}`, { ignoreNotFound: true });
+    await deleteApi(`${API}/Empleado/idUsuario/${id}`, { ignoreNotFound: true });
+    const clientes = await fetchApiList("Cliente", `idUsuario eq ${id}`);
+    if (!clientes.length) {
+      await postApi(`${API}/Cliente`, { idUsuario: id }, { ignoreConflict: true });
+    }
+  }
+};
+
 const deleteUsuarioRelations = async (idUsuario) => {
   const id = Number(idUsuario);
   const [reservasUsuario, cliente, empleado, cocinero, administrador] = await Promise.all([
@@ -608,9 +742,9 @@ const executeDelete = async () => {
 
 /* ── WRAPPER: ocupa el espacio bajo el NavBar ── */
 .admin-wrapper {
-  padding-top: 72px; /* altura del NavBar fijo */
+  padding-top: 72px;
   min-height: 100vh;
-  background: #fdfbf9;
+  background: #f7f2ea;
   box-sizing: border-box;
 }
 
@@ -622,12 +756,12 @@ const executeDelete = async () => {
 
 /* ── SIDEBAR ── */
 .admin-sidebar {
-  width: 220px;
-  min-width: 220px;
-  background: #1a1410;
+  width: 208px;
+  min-width: 208px;
+  background: linear-gradient(180deg, #1a1410 0%, #22180f 100%);
   display: flex;
   flex-direction: column;
-  padding: 2rem 0;
+  padding: 1.4rem 0;
   position: sticky;
   top: 72px;
   height: calc(100vh - 72px);
@@ -647,9 +781,9 @@ const executeDelete = async () => {
   display: flex;
   align-items: center;
   width: 100%;
-  padding: 12px 24px;
+  padding: 11px 22px;
   font-family: "Montserrat", sans-serif;
-  font-size: 0.88rem;
+  font-size: 0.82rem;
   color: #a89880;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -673,15 +807,16 @@ const executeDelete = async () => {
 .admin-main {
   flex: 1;
   min-width: 0;
-  padding: 2.5rem 3rem;
-  background: #fdfbf9;
+  padding: 2.6rem 3rem;
+  background: #f7f2ea;
 }
 
 .admin-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
+  max-width: 1180px;
+  margin: 0 auto 1.8rem;
 }
 
 .admin-header h1 {
@@ -710,10 +845,12 @@ const executeDelete = async () => {
 /* ── CARD + TABLA ── */
 .admin-card {
   background: white;
-  border-radius: 10px;
-  border: 1px solid #f0ebe4;
-  box-shadow: 0 4px 25px rgba(0,0,0,0.04);
+  border-radius: 6px;
+  border: 1px solid #e9dfd2;
+  box-shadow: 0 10px 30px rgba(26, 20, 16, 0.05);
   overflow: hidden;
+  max-width: 1180px;
+  margin: 0 auto;
 }
 
 .table-wrapper { overflow-x: auto; }
@@ -721,13 +858,19 @@ const executeDelete = async () => {
 table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 580px;
+  min-width: 760px;
+  table-layout: fixed;
+}
+
+th:last-child,
+td:last-child {
+  width: 210px;
 }
 
 thead tr { background: #fcfaf8; }
 
 th {
-  padding: 0.9rem 1.2rem;
+  padding: 0.85rem 1rem;
   text-align: left;
   font-size: 0.7rem;
   text-transform: uppercase;
@@ -739,7 +882,7 @@ th {
 }
 
 td {
-  padding: 0.9rem 1.2rem;
+  padding: 0.82rem 1rem;
   border-bottom: 1px solid #f5f0ea;
   font-size: 0.88rem;
   color: #3a3830;
@@ -778,6 +921,7 @@ tbody tr:hover { background: #fdfaf7; }
   display: flex;
   gap: 6px;
   align-items: center;
+  justify-content: flex-start;
 }
 
 .btn-edit,

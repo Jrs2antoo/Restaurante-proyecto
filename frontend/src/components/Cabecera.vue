@@ -1,20 +1,18 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from "vue";
-import { RouterLink, useRouter } from "vue-router";
+import { RouterLink, useRoute, useRouter } from "vue-router";
 import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
 
-const ADMIN_ID = "0zqRdP39nXRgH7Cl3ukyjEqEy6v2";
-
 const router = useRouter();
+const route = useRoute();
 const auth = getAuth();
 
 const isScrolled = ref(false);
 const usuarioActual = ref(null);
 const menuAbierto = ref(false);
+const esAdmin = ref(false);
 
 let unsubscribeAuth = null;
-
-const esAdmin = computed(() => usuarioActual.value?.uid === ADMIN_ID);
 
 const nombreUsuario = computed(() => {
   const u = usuarioActual.value;
@@ -24,6 +22,10 @@ const nombreUsuario = computed(() => {
 
 const inicialUsuario = computed(() =>
   nombreUsuario.value.charAt(0).toUpperCase(),
+);
+
+const navSolido = computed(() =>
+  isScrolled.value || route.path === "/administracion",
 );
 
 const toggleMenu = () => {
@@ -40,6 +42,42 @@ const handleScroll = () => {
   isScrolled.value = window.scrollY > 40;
 };
 
+const fetchApiList = async (entity, filter = "") => {
+  const url = filter
+    ? `/api/${entity}?$filter=${encodeURIComponent(filter)}`
+    : `/api/${entity}`;
+  const res = await fetch(url);
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.value || data || [];
+};
+
+const comprobarAdmin = async (user) => {
+  const email = user?.email?.toLowerCase();
+  if (!email) {
+    esAdmin.value = false;
+    return;
+  }
+
+  const usuarios = await fetchApiList(
+    "Usuario",
+    `email eq '${email.replaceAll("'", "''")}'`,
+  );
+  const usuario = usuarios.find((u) => u.email?.toLowerCase() === email);
+
+  if (!usuario?.idUsuario) {
+    esAdmin.value = false;
+    return;
+  }
+
+  const administradores = await fetchApiList(
+    "Administrador",
+    `idUsuario eq ${Number(usuario.idUsuario)}`,
+  );
+
+  esAdmin.value = administradores.length > 0;
+};
+
 const cerrarSesion = async () => {
   menuAbierto.value = false;
   await signOut(auth);
@@ -50,8 +88,9 @@ onMounted(() => {
   window.addEventListener("scroll", handleScroll);
   document.addEventListener("click", handleClickFuera);
 
-  unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+  unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
     usuarioActual.value = user;
+    await comprobarAdmin(user);
   });
 });
 
@@ -64,7 +103,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <nav :class="{ scrolled: isScrolled }">
+  <nav :class="{ scrolled: navSolido }">
     <RouterLink to="/" class="nav-logo">La <span>Brasa</span></RouterLink>
 
     <ul class="nav-links">

@@ -31,8 +31,6 @@ async function saveUserToDb(nombre, userEmail, passwordHash = 'firebase-auth') {
       contraseña: passwordHash,
       rol: 'cliente'
     }
-    console.log('saveUserToDb: enviando →', payload)
-
     const res = await fetch('http://localhost:5000/api/Usuario', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -40,7 +38,6 @@ async function saveUserToDb(nombre, userEmail, passwordHash = 'firebase-auth') {
     })
 
     const body = await res.text()
-    console.log('saveUserToDb: respuesta →', res.status, body)
 
     // 409 Conflict = ya existe, no es error crítico
     if (!res.ok && res.status !== 409) {
@@ -70,7 +67,6 @@ async function loginSocial(ProviderClass) {
   error.value = ''
   try {
     const { user } = await signInWithPopup(auth, new ProviderClass())
-    console.log('Social login OK — uid:', user.uid, '| email:', user.email, '| nombre:', user.displayName)
 
     if (!user.email) {
       console.warn('El proveedor no devolvió email; no se guarda en BD')

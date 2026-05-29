@@ -193,7 +193,7 @@ body {
 .hero {
   position: relative;
   height: 100vh;
-  min-height: 640px;
+  min-height: 720px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -229,7 +229,7 @@ body {
   position: relative;
   text-align: center;
   color: var(--cream);
-  padding: 0 1.5rem;
+  padding: 96px 1.5rem 0;
   animation: fadeUp 1.1s ease both;
 }
 @keyframes fadeUp {
@@ -247,15 +247,17 @@ body {
   letter-spacing: 0.3em;
   text-transform: uppercase;
   color: var(--gold);
-  margin-bottom: 1.2rem;
+  margin-bottom: 1rem;
+  font-family: "Montserrat", sans-serif;
+  font-weight: 500;
   animation: fadeUp 1.1s 0.15s ease both;
 }
 .hero-title {
   font-family: "Cormorant Garamond", serif;
-  font-size: clamp(3.5rem, 9vw, 7.5rem);
+  font-size: clamp(3.25rem, 7vw, 6rem);
   font-weight: 300;
   line-height: 1;
-  margin-bottom: 1.4rem;
+  margin-bottom: 1.2rem;
   animation: fadeUp 1.1s 0.3s ease both;
 }
 .hero-title em {
@@ -264,11 +266,11 @@ body {
   color: var(--gold);
 }
 .hero-sub {
-  font-size: 0.88rem;
+  font-size: 0.9rem;
   font-weight: 300;
-  letter-spacing: 0.1em;
-  opacity: 0.85;
-  max-width: 420px;
+  letter-spacing: 0.08em;
+  opacity: 0.82;
+  max-width: 460px;
   margin: 0 auto 2.6rem;
   line-height: 1.8;
   animation: fadeUp 1.1s 0.45s ease both;

@@ -58,18 +58,47 @@ const esperarUsuario = () => {
     });
 };
 
+const fetchApiList = async (entity, filter = "") => {
+    const url = filter
+        ? `/api/${entity}?$filter=${encodeURIComponent(filter)}`
+        : `/api/${entity}`;
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.value || data || [];
+};
+
+const esAdministrador = async (user) => {
+    const email = user?.email?.toLowerCase();
+    if (!email) return false;
+
+    const usuarios = await fetchApiList(
+        "Usuario",
+        `email eq '${email.replaceAll("'", "''")}'`
+    );
+    const usuario = usuarios.find(u => u.email?.toLowerCase() === email);
+
+    if (!usuario?.idUsuario) return false;
+
+    const administradores = await fetchApiList(
+        "Administrador",
+        `idUsuario eq ${Number(usuario.idUsuario)}`
+    );
+
+    return administradores.length > 0;
+};
+
 router.beforeEach(async (to) => {
     const usuarioLogueado = await esperarUsuario();
-    const ADMIN_ID = "0zqRdP39nXRgH7Cl3ukyjEqEy6v2";
-
-    // Usuario no es admin intentando entrar a ruta de admin
-    if (to.meta.onlyAdmin && usuarioLogueado?.uid !== ADMIN_ID) {
-        return "/";
-    }
 
     // Ruta protegida sin estar logueado
     if (to.meta.requireAuth && !usuarioLogueado) {
         return "/login";
+    }
+
+    // Usuario no es admin intentando entrar a ruta de admin
+    if (to.meta.onlyAdmin && !(await esAdministrador(usuarioLogueado))) {
+        return "/";
     }
 
     // Ya logueado intentando entrar a login/register

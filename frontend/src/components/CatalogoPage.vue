@@ -205,10 +205,9 @@ onMounted(() => {
 /* HEADER */
 .catalogo-header {
   position: relative;
-  height: 52vh;
-  min-height: 360px;
+  height: 56vh;
+  min-height: 430px;
   margin-top: 0;
-  padding-top: 72px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -234,7 +233,7 @@ onMounted(() => {
   position: relative;
   text-align: center;
   color: var(--cream);
-  padding: 0 1.5rem;
+  padding: 96px 1.5rem 0;
   animation: fadeUp 0.9s ease both;
 }
 @keyframes fadeUp {
@@ -253,10 +252,12 @@ onMounted(() => {
   text-transform: uppercase;
   color: var(--gold);
   margin-bottom: 1rem;
+  font-family: "Montserrat", sans-serif;
+  font-weight: 500;
 }
 .hero-title {
   font-family: "Cormorant Garamond", serif;
-  font-size: clamp(3rem, 8vw, 6rem);
+  font-size: clamp(3.25rem, 7vw, 6rem);
   font-weight: 300;
   line-height: 1;
   margin-bottom: 1.2rem;
@@ -266,11 +267,11 @@ onMounted(() => {
   color: var(--gold);
 }
 .hero-sub {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   font-weight: 300;
   letter-spacing: 0.08em;
-  opacity: 0.8;
-  max-width: 440px;
+  opacity: 0.82;
+  max-width: 460px;
   margin: 0 auto;
   line-height: 1.8;
 }

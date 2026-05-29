@@ -269,7 +269,7 @@
                 <div class="pago-fianza-info">
                   <div class="fianza-row">
                     <span>Fianza por comensal</span>
-                    <span>{{ fianzaPorPersona }}€</span>
+                    <span>{{ formatImporte(fianzaPorPersona) }}</span>
                   </div>
                   <div class="fianza-row">
                     <span>Comensales</span>
@@ -277,11 +277,11 @@
                   </div>
                   <div class="fianza-total">
                     <span>Total fianza</span>
-                    <span class="fianza-amount">{{ fianzaTotal }}€</span>
+                    <span class="fianza-amount">{{ fianzaTotalFormateada }}</span>
                   </div>
                   <p class="fianza-nota">
                     La fianza se descuenta íntegramente de tu consumición.
-                    En caso de cancelación con menos de 24h, no es reembolsable.
+                    En caso de cancelación con menos de 48 horas, no es reembolsable.
                   </p>
                 </div>
               </div>
@@ -344,7 +344,7 @@
                     <label class="form-label">Número de teléfono Bizum</label>
                     <input v-model="pago.bizumTel" class="form-input" type="tel" placeholder="+34 600 000 000" />
                   </div>
-                  <p class="form-hint">Recibirás una solicitud de pago de {{ fianzaTotal }}€ en tu app Bizum.</p>
+                  <p class="form-hint">Recibirás una solicitud de pago de {{ fianzaTotalFormateada }} en tu app Bizum.</p>
                 </div>
 
                 <!-- Seguridad -->
@@ -360,7 +360,7 @@
                     :disabled="!canPagar || pagando"
                     @click="confirmarReserva"
                   >
-                    <span v-if="!pagando">Pagar {{ fianzaTotal }}€ y confirmar</span>
+                    <span v-if="!pagando">Pagar {{ fianzaTotalFormateada }} y confirmar</span>
                     <span v-else class="loading-dots">Procesando<span>.</span><span>.</span><span>.</span></span>
                   </button>
                 </div>
@@ -406,7 +406,7 @@
                 </div>
                 <div class="resumen-item">
                   <span class="resumen-icon">💳</span>
-                  <span>Fianza pagada: {{ fianzaTotal }}€</span>
+                  <span>Fianza pagada: {{ fianzaTotalFormateada }}</span>
                 </div>
               </div>
             </div>
@@ -638,6 +638,10 @@ export default {
 
     fianzaTotal() {
       return this.fianzaPorPersona * this.personas;
+    },
+
+    fianzaTotalFormateada() {
+      return this.formatImporte(this.fianzaTotal);
     },
 
     capacidadMesaRequerida() {
@@ -1041,6 +1045,13 @@ export default {
           .trim();
     },
 
+    formatImporte(importe) {
+      return `${Number(importe || 0).toLocaleString("es-ES", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })} €`;
+    },
+
     async confirmarReserva() {
 
       this.pagando = true;
@@ -1118,8 +1129,6 @@ export default {
           fechaLimitePago:
           fechaLimiteISO,
         };
-
-        console.log("[POST Reserva]", body);
 
         const res = await fetch(`${DAB}/Reserva`, {
 
@@ -1378,18 +1387,19 @@ export default {
 /* ─── HERO ─── */
 .reservas-hero {
   position: relative;
-  height: 50vh;
-  min-height: 340px;
+  height: 56vh;
+  min-height: 430px;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
 }
 .reservas-hero-bg {
-  position: absolute; inset: 0;
-  background-image: url("https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1600&q=80");
-  background-size: cover;
-  background-position: center 40%;
+  position: absolute;
+  inset: 0;
+  background: url("https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1600&q=80")
+    center/cover no-repeat;
+  transform: scale(1.05);
   animation: kenBurns 18s ease-in-out infinite alternate;
 }
 @keyframes kenBurns {
@@ -1397,13 +1407,19 @@ export default {
   to { transform: scale(1.1) translate(-0.5%, -0.5%); }
 }
 .reservas-hero-overlay {
-  position: absolute; inset: 0;
-  background: linear-gradient(160deg, rgba(26,20,16,0.78) 0%, rgba(26,20,16,0.5) 60%, rgba(107,76,42,0.3) 100%);
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    160deg,
+    rgba(26, 20, 16, 0.78) 0%,
+    rgba(26, 20, 16, 0.5) 100%
+  );
 }
 .reservas-hero-content {
   position: relative;
   text-align: center;
   color: var(--cream);
+  padding: 96px 1.5rem 0;
   animation: fadeUp 1s ease both;
 }
 @keyframes fadeUp {
@@ -1411,18 +1427,20 @@ export default {
   to { opacity: 1; transform: translateY(0); }
 }
 .hero-eyebrow {
-  font-size: 0.65rem; letter-spacing: 0.3em;
+  font-size: 0.68rem; letter-spacing: 0.3em;
   text-transform: uppercase; color: var(--gold); margin-bottom: 1rem;
+  font-family: "Montserrat", sans-serif; font-weight: 500;
 }
 .hero-title {
   font-family: "Cormorant Garamond", serif;
-  font-size: clamp(2.5rem, 6vw, 5rem);
-  font-weight: 300; line-height: 1;
+  font-size: clamp(3.25rem, 7vw, 6rem);
+  font-weight: 300; line-height: 1; margin-bottom: 1.2rem;
 }
 .hero-title em { font-style: italic; color: var(--gold); }
 .hero-sub {
-  font-size: 0.85rem; font-weight: 300;
-  opacity: 0.8; margin-top: 1rem; letter-spacing: 0.06em;
+  font-size: 0.9rem; font-weight: 300;
+  opacity: 0.82; margin: 0 auto; letter-spacing: 0.08em;
+  max-width: 460px; line-height: 1.8;
 }
 
 /* ─── SECCIÓN PRINCIPAL ─── */
