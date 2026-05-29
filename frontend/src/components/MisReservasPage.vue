@@ -49,6 +49,13 @@
           </div>
 
           <!-- Toast de éxito -->
+          <div class="reservas-info">
+            <span class="reservas-info-icon">ℹ</span>
+            <p>
+              Las reservas solo se pueden editar hasta 48 horas antes. Si cancelas con 48 horas o más de antelación, la fianza se marcará para devolución; con menos de 48 horas, no será reembolsable.
+            </p>
+          </div>
+
           <Transition name="toast-slide">
             <div v-if="toastMsg" class="toast-success">
               <span class="toast-icon">✓</span>
@@ -99,7 +106,7 @@
                       >
                       <span v-if="reserva.fianza" class="detalle-item"
                         ><span class="detalle-icon">💳</span> Fianza:
-                        {{ reserva.fianza }}€</span
+                        {{ formatFianza(reserva.fianza, reserva.numPersonas) }}</span
                       >
                     </div>
                   </div>
@@ -123,10 +130,10 @@
                 >
                   <button
                     class="btn-accion btn-editar"
-                    :disabled="isPasada(reserva.fecha)"
+                    :disabled="!puedeEditarReserva(reserva)"
                     :title="
-                      isPasada(reserva.fecha)
-                        ? 'No se pueden editar reservas pasadas'
+                      !puedeEditarReserva(reserva)
+                        ? 'No se puede editar si quedan menos de 48 horas'
                         : 'Editar reserva'
                     "
                     @click="abrirEdicion(reserva)"
@@ -174,19 +181,16 @@
             >.
           </p>
 
-          <!-- AVISO FIANZA — siempre visible -->
-          <div class="fianza-aviso">
+          <div
+            class="fianza-aviso"
+            :class="{ reembolsable: cancelacionConDevolucion }"
+          >
             <span class="fianza-aviso-icon">💰</span>
             <div>
-              <strong>La fianza NO será devuelta.</strong>
-              <p v-if="reservaAcancelar?.fianza">
-                Según nuestras condiciones, la fianza de
-                <strong>{{ reservaAcancelar.fianza }}€</strong> abonada no es
-                reembolsable en caso de cancelación.
-              </p>
-              <p v-else>
-                Según nuestras condiciones, la fianza abonada no es reembolsable
-                en caso de cancelación.
+              <strong v-if="cancelacionConDevolucion">La fianza será devuelta.</strong>
+              <strong v-else>La fianza NO será devuelta.</strong>
+              <p>
+                {{ mensajeFianzaCancelacion }}
               </p>
             </div>
           </div>
@@ -200,7 +204,9 @@
               :disabled="cancelando"
               @click="confirmarCancelacion"
             >
-              <span v-if="!cancelando">Sí, cancelar</span>
+              <span v-if="!cancelando">
+                {{ cancelacionConDevolucion ? "Sí, cancelar y solicitar devolución" : "Sí, cancelar" }}
+              </span>
               <span v-else>Cancelando…</span>
             </button>
           </div>
@@ -224,7 +230,7 @@
                 String(reservaAeditar?.idReserva).slice(-6).toUpperCase()
               }}</span
             >
-            <h3 class="modal-title-left">Cambiar fecha<br /><em>y mesa</em></h3>
+            <h3 class="modal-title-left">Cambiar fecha,<br /><em>personas y mesa</em></h3>
           </div>
 
           <!-- ── FECHA ── -->
@@ -280,6 +286,34 @@
           </div>
 
           <!-- ── MESA ── -->
+          <!-- PERSONAS -->
+          <div class="edit-seccion">
+            <label class="form-label">N&uacute;mero de comensales</label>
+            <div class="personas-selector">
+              <button
+                class="personas-btn"
+                :disabled="personasEdit <= personasOriginalEdit"
+                @click="cambiarPersonasEdit(-1)"
+              >
+                &minus;
+              </button>
+              <div class="personas-display">
+                <span class="personas-num">{{ personasEdit }}</span>
+                <span class="personas-label">{{ personasEdit === 1 ? "persona" : "personas" }}</span>
+              </div>
+              <button
+                class="personas-btn"
+                :disabled="personasEdit >= 12"
+                @click="cambiarPersonasEdit(1)"
+              >
+                +
+              </button>
+            </div>
+            <p class="form-hint">
+              Puedes aumentar los comensales, pero no reducirlos desde esta pantalla.
+            </p>
+          </div>
+
           <div class="edit-seccion" v-if="fechaEditSeleccionada">
             <label class="form-label">&iquest;D&oacute;nde prefieres sentarte?</label>
             <div class="ubicacion-cards">
@@ -327,10 +361,10 @@
                   selected: mesaEditSeleccionada === mesa.idMesa,
                   ocupada: !mesa.disponible,
                   insuficiente:
-                    mesa.disponible && mesa.capacidad < (reservaAeditar?.numPersonas || 1),
+                    mesa.disponible && !mesaTieneCapacidadCorrectaEdit(mesa),
                 }"
-                :disabled="!mesa.disponible || mesa.capacidad < (reservaAeditar?.numPersonas || 1)"
-                @click="mesaEditSeleccionada = mesa.idMesa"
+                :disabled="!mesa.disponible || !mesaTieneCapacidadCorrectaEdit(mesa)"
+                @click="seleccionarMesaEdit(mesa)"
               >
                 <span class="mesa-icon">🪑</span>
                 <span class="mesa-num">Mesa {{ mesa.idMesa }}</span>
@@ -339,8 +373,8 @@
                   {{ mesa.capacidad === 1 ? "persona" : "personas" }}</span
                 >
                 <span v-if="!mesa.disponible" class="mesa-tag">Ocupada</span>
-                <span v-else-if="mesa.capacidad < (reservaAeditar?.numPersonas || 1)" class="mesa-tag"
-                  >Pequeña</span
+                <span v-else-if="!mesaTieneCapacidadCorrectaEdit(mesa)" class="mesa-tag"
+                  >Bloqueada</span
                 >
               </button>
             </div>
@@ -423,6 +457,8 @@ export default {
       // Campos editables
       mesaEditSeleccionada: null,
       ubicacionEdit: null,
+      personasEdit: 1,
+      personasOriginalEdit: 1,
 
       // Datos BD
       todasLasMesas: [],
@@ -486,7 +522,13 @@ export default {
     },
 
     mesasLibresEdit() {
-      return this.mesasDisponiblesEdit.filter((m) => m.disponible).length;
+      return this.mesasDisponiblesEdit.filter(
+        (m) => m.disponible && this.mesaTieneCapacidadCorrectaEdit(m),
+      ).length;
+    },
+
+    capacidadMesaRequeridaEdit() {
+      return Math.ceil(this.personasEdit / 2) * 2;
     },
 
     disponibilidadEdit() {
@@ -507,8 +549,34 @@ export default {
     puedeGuardarEdit() {
       return (
         !!this.fechaEditSeleccionada &&
-        !!this.mesaEditSeleccionada
+        !!this.mesaEditSeleccionada &&
+        this.personasEdit >= this.personasOriginalEdit
       );
+    },
+
+    horasHastaReservaCancelacion() {
+      if (!this.reservaAcancelar) return 0;
+
+      return this.horasHastaReserva(this.reservaAcancelar);
+    },
+
+    cancelacionConDevolucion() {
+      return this.horasHastaReservaCancelacion >= 48;
+    },
+
+    mensajeFianzaCancelacion() {
+      const fianza = this.reservaAcancelar?.fianza
+        ? ` de ${this.formatFianza(
+            this.reservaAcancelar.fianza,
+            this.reservaAcancelar.numPersonas,
+          )}`
+        : "";
+
+      if (this.cancelacionConDevolucion) {
+        return `Cancelas con al menos 48 horas de antelación. La fianza${fianza} queda marcada para devolución.`;
+      }
+
+      return `Quedan menos de 48 horas para la reserva. La fianza${fianza} no es reembolsable en esta cancelación.`;
     },
   },
 
@@ -517,6 +585,16 @@ export default {
       if (!nuevaFecha) return;
       this.mesaEditSeleccionada = null;
       await this.cargarReservasDelDiaEdit();
+    },
+
+    personasEdit() {
+      const mesa = this.mesasDisponiblesEdit.find(
+        (m) => m.idMesa === this.mesaEditSeleccionada,
+      );
+
+      if (!mesa || !this.mesaTieneCapacidadCorrectaEdit(mesa)) {
+        this.mesaEditSeleccionada = null;
+      }
     },
 
   },
@@ -625,6 +703,26 @@ export default {
       return String(hora).substring(0, 5);
     },
 
+    normalizarFianza(fianza, personas) {
+      const importe = Number(fianza);
+      if (!Number.isFinite(importe)) return 0;
+
+      const importeEsperado = Number(personas || 0) * 2.5;
+
+      if (importeEsperado && Math.abs(importe / 10 - importeEsperado) < 0.01) {
+        return importe / 10;
+      }
+
+      return importe;
+    },
+
+    formatFianza(fianza, personas) {
+      return `${this.normalizarFianza(fianza, personas).toLocaleString("es-ES", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}€`;
+    },
+
     labelEstado(estado) {
       const mapa = {
         confirmada: "Confirmada",
@@ -652,6 +750,30 @@ export default {
     },
 
     // ── CANCELACIÓN ─────────────────────────────────────────────
+
+    fechaHoraReserva(reserva) {
+      const fecha = String(reserva?.fecha || "").substring(0, 10);
+      const hora = String(reserva?.hora || "20:00:00").substring(0, 8);
+      const [year, month, day] = fecha.split("-").map(Number);
+      const [hours, minutes, seconds] = hora.split(":").map(Number);
+
+      return new Date(
+        year,
+        (month || 1) - 1,
+        day || 1,
+        hours || 0,
+        minutes || 0,
+        seconds || 0,
+      );
+    },
+
+    horasHastaReserva(reserva) {
+      return (this.fechaHoraReserva(reserva).getTime() - Date.now()) / (1000 * 60 * 60);
+    },
+
+    puedeEditarReserva(reserva) {
+      return this.horasHastaReserva(reserva) >= 48;
+    },
 
     pedirCancelacion(reserva) {
       this.reservaAcancelar = reserva;
@@ -696,6 +818,8 @@ export default {
       this.mesaEditSeleccionada = null;
       this.ubicacionEdit = null;
       this.reservasDelDiaEdit = [];
+      this.personasOriginalEdit = reserva.numPersonas || 1;
+      this.personasEdit = this.personasOriginalEdit;
 
       const mesaActual = this.todasLasMesas.find(
         (m) => m.idMesa === reserva.idMesa,
@@ -715,6 +839,8 @@ export default {
       this.fechaEditSeleccionada = null;
       this.mesaEditSeleccionada = null;
       this.ubicacionEdit = null;
+      this.personasEdit = 1;
+      this.personasOriginalEdit = 1;
     },
 
     // ── CALENDARIO ──────────────────────────────────────────────
@@ -745,11 +871,39 @@ export default {
             r.idReserva !== this.reservaAeditar?.idReserva,
         )
         .map((r) => r.idMesa);
-      return mesasOcupadas.length < this.todasLasMesas.length;
+      return this.todasLasMesas.some((m) => {
+        const ubUsuario = (this.ubicacionEdit || "").toLowerCase();
+        const ubMesa = (m.ubicacion || "").toLowerCase();
+
+        return (
+          !!m.disponible &&
+          Number(m.capacidad) === this.capacidadMesaRequeridaEdit &&
+          (!ubUsuario || ubMesa === ubUsuario) &&
+          !mesasOcupadas.includes(m.idMesa)
+        );
+      });
     },
 
     selectFechaEdit(day) {
       this.fechaEditSeleccionada = day;
+    },
+
+    mesaTieneCapacidadCorrectaEdit(mesa) {
+      return Number(mesa.capacidad) === this.capacidadMesaRequeridaEdit;
+    },
+
+    cambiarPersonasEdit(cambio) {
+      const siguiente = this.personasEdit + cambio;
+
+      if (siguiente < this.personasOriginalEdit || siguiente > 12) return;
+
+      this.personasEdit = siguiente;
+    },
+
+    seleccionarMesaEdit(mesa) {
+      if (!mesa.disponible) return;
+      if (!this.mesaTieneCapacidadCorrectaEdit(mesa)) return;
+      this.mesaEditSeleccionada = mesa.idMesa;
     },
 
     prevMesEdit() {
@@ -807,10 +961,19 @@ export default {
       if (!this.puedeGuardarEdit || !this.reservaAeditar) return;
       this.guardando = true;
       try {
+        const mesaElegida = this.mesasDisponiblesEdit.find(
+          (m) => m.idMesa === this.mesaEditSeleccionada,
+        );
+
+        if (!mesaElegida || !this.mesaTieneCapacidadCorrectaEdit(mesaElegida)) {
+          throw new Error("Mesa bloqueada para este número de personas");
+        }
+
         // Campos exactos según la tabla MySQL
         const body = {
           fecha: this.fechaEditISO,
           idMesa: this.mesaEditSeleccionada,
+          numPersonas: this.personasEdit,
         };
 
         const res = await fetch(
@@ -829,6 +992,7 @@ export default {
         if (idx !== -1) {
           this.reservas[idx].fecha = this.fechaEditISO;
           this.reservas[idx].idMesa = this.mesaEditSeleccionada;
+          this.reservas[idx].numPersonas = this.personasEdit;
         }
 
         this.cerrarEdicion();
@@ -981,6 +1145,34 @@ export default {
   font-size: 1.7rem;
   font-weight: 300;
   color: var(--dark);
+}
+.reservas-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: rgba(201, 150, 58, 0.1);
+  border: 1px solid rgba(201, 150, 58, 0.28);
+  border-radius: 4px;
+  padding: 1rem 1.1rem;
+  margin-bottom: 1.5rem;
+}
+.reservas-info-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--gold);
+  color: var(--dark);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+.reservas-info p {
+  font-size: 0.8rem;
+  color: rgba(45, 37, 32, 0.68);
+  line-height: 1.55;
 }
 
 /* TOAST */
@@ -1399,6 +1591,10 @@ export default {
   padding: 1.2rem;
   margin-bottom: 1.6rem;
 }
+.fianza-aviso.reembolsable {
+  background: rgba(74, 181, 100, 0.08);
+  border-color: rgba(74, 181, 100, 0.28);
+}
 .fianza-aviso-icon {
   font-size: 1.6rem;
   flex-shrink: 0;
@@ -1408,6 +1604,9 @@ export default {
   font-size: 0.9rem;
   color: #a22;
   margin-bottom: 4px;
+}
+.fianza-aviso.reembolsable strong {
+  color: #2d7a45;
 }
 .fianza-aviso p {
   font-size: 0.8rem;
@@ -1705,6 +1904,13 @@ export default {
 .personas-btn:hover {
   background: rgba(45, 37, 32, 0.06);
 }
+.personas-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.personas-btn:disabled:hover {
+  background: none;
+}
 .personas-display {
   display: flex;
   flex-direction: column;
@@ -1725,6 +1931,11 @@ export default {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: rgba(45, 37, 32, 0.45);
+}
+.form-hint {
+  font-size: 0.75rem;
+  color: rgba(45, 37, 32, 0.5);
+  margin-top: 0.6rem;
 }
 
 /* DISPONIBILIDAD */

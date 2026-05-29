@@ -139,17 +139,17 @@
                   :class="{
                     selected: mesaSeleccionada === mesa.idMesa,
                     ocupada: !mesa.disponible,
-                    insuficiente: mesa.disponible && mesa.capacidad < personas
+                    insuficiente: mesa.disponible && !mesaTieneCapacidadCorrecta(mesa)
                   }"
-                  :disabled="!mesa.disponible || mesa.capacidad < personas"
-                  :title="mesa.disponible ? `Mesa ${mesa.idMesa} - ${mesa.capacidad} personas` : `Mesa ${mesa.idMesa} - ocupada este día`"
+                  :disabled="!mesa.disponible || !mesaTieneCapacidadCorrecta(mesa)"
+                  :title="tituloMesa(mesa)"
                   @click="seleccionarMesa(mesa)"
                 >
                   <span class="mesa-icon">🪑</span>
                   <span class="mesa-num">Mesa {{ mesa.idMesa }}</span>
                   <span class="mesa-capacidad">{{ mesa.capacidad }} {{ mesa.capacidad === 1 ? 'persona' : 'personas' }}</span>
                   <span v-if="!mesa.disponible" class="mesa-tag">Ocupada</span>
-                  <span v-else-if="mesa.capacidad < personas" class="mesa-tag">Pequeña</span>
+                  <span v-else-if="!mesaTieneCapacidadCorrecta(mesa)" class="mesa-tag">Bloqueada</span>
                 </button>
               </div>
             </div>
@@ -588,7 +588,9 @@ export default {
     },
 
     mesasLibres() {
-      return this.mesasDisponibles.filter(m => m.disponible).length;
+      return this.mesasDisponibles.filter(
+          m => m.disponible && this.mesaTieneCapacidadCorrecta(m)
+      ).length;
     },
 
     disponibilidadMesas() {
@@ -636,6 +638,10 @@ export default {
 
     fianzaTotal() {
       return this.fianzaPorPersona * this.personas;
+    },
+
+    capacidadMesaRequerida() {
+      return Math.ceil(this.personas / 2) * 2;
     },
 
     canGoStep2() {
@@ -697,7 +703,7 @@ export default {
           m => m.idMesa === this.mesaSeleccionada
       );
 
-      if (!mesa || mesa.capacidad < this.personas) {
+      if (!mesa || !this.mesaTieneCapacidadCorrecta(mesa)) {
         this.mesaSeleccionada = null;
       }
     },
@@ -850,18 +856,44 @@ export default {
               )
               .map(r => r.idMesa);
 
-      return mesasOcupadas.length < this.todasLasMesas.length;
+      return this.todasLasMesas.some(m => {
+        const ubUsuario = this.ubicacion.toLowerCase();
+        const ubMesa = (m.ubicacion || "").toLowerCase();
+
+        return (
+            !!m.disponible &&
+            Number(m.capacidad) === this.capacidadMesaRequerida &&
+            (ubUsuario === "cualquiera" || ubMesa === ubUsuario) &&
+            !mesasOcupadas.includes(m.idMesa)
+        );
+      });
     },
 
     selectFecha(day) {
       this.fechaSeleccionada = day;
     },
 
+    mesaTieneCapacidadCorrecta(mesa) {
+      return Number(mesa.capacidad) === this.capacidadMesaRequerida;
+    },
+
+    tituloMesa(mesa) {
+      if (!mesa.disponible) {
+        return `Mesa ${mesa.idMesa} - ocupada este día`;
+      }
+
+      if (!this.mesaTieneCapacidadCorrecta(mesa)) {
+        return `Mesa ${mesa.idMesa} bloqueada: para ${this.personas} ${this.personas === 1 ? "persona" : "personas"} necesitas mesa de ${this.capacidadMesaRequerida}`;
+      }
+
+      return `Mesa ${mesa.idMesa} - ${mesa.capacidad} personas`;
+    },
+
     seleccionarMesa(mesa) {
 
       if (!mesa.disponible) return;
 
-      if (mesa.capacidad < this.personas) return;
+      if (!this.mesaTieneCapacidadCorrecta(mesa)) return;
 
       this.mesaSeleccionada = mesa.idMesa;
     },
@@ -1022,6 +1054,10 @@ export default {
 
         if (!mesaElegida) {
           throw new Error("Mesa no disponible");
+        }
+
+        if (!this.mesaTieneCapacidadCorrecta(mesaElegida)) {
+          throw new Error("Mesa bloqueada para este número de personas");
         }
 
         const emailUsuario = this.usuarioActual?.email;
