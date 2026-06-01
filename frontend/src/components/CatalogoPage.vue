@@ -1,12 +1,12 @@
 <script setup>
-import { computed, onMounted, ref } from "vue";
+import { ref, computed, onMounted } from "vue";
 import Cabecera from "./Cabecera.vue";
-import Footer from "./Footer.vue";
 
 const API = "/api";
 
 const categoriaActiva = ref("Todo");
 const busqueda = ref("");
+
 const cargando = ref(true);
 const error = ref(null);
 const categorias = ref(["Todo"]);
@@ -14,7 +14,7 @@ const platos = ref([]);
 
 const cargarProductos = async () => {
   const res = await fetch(
-    `${API}/Producto?$filter=disponible eq true&$orderby=categoria,nombre`,
+      `${API}/Producto?$filter=disponible eq true&$orderby=categoria,nombre`,
   );
 
   if (!res.ok) {
@@ -31,8 +31,9 @@ const cargarProductos = async () => {
     precio: parseFloat(p.precio),
     desc: p.descripcion ?? "",
     imagen:
-      p.imagen ??
-      "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600&auto=format&fit=crop&q=80",
+        p.imagen_url ??
+        p.imagen ??
+        "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600&auto=format&fit=crop&q=80",
     disponible: !!p.disponible,
     nuevo: !!p.nuevo,
     popular: !!p.popular,
@@ -60,7 +61,7 @@ const cargarDatos = async () => {
     await cargarProductos();
   } catch (e) {
     error.value =
-      "No se pudo conectar con la base de datos. Inténtalo de nuevo.";
+        "No se pudo conectar con la base de datos. Inténtalo de nuevo.";
     console.error(e);
   } finally {
     cargando.value = false;
@@ -70,11 +71,11 @@ const cargarDatos = async () => {
 const platosFiltrados = computed(() => {
   return platos.value.filter((p) => {
     const enCategoria =
-      categoriaActiva.value === "Todo" || p.categoria === categoriaActiva.value;
+        categoriaActiva.value === "Todo" || p.categoria === categoriaActiva.value;
 
     const enBusqueda = p.nombre
-      .toLowerCase()
-      .includes(busqueda.value.toLowerCase());
+        .toLowerCase()
+        .includes(busqueda.value.toLowerCase());
 
     return enCategoria && enBusqueda;
   });
@@ -83,6 +84,7 @@ const platosFiltrados = computed(() => {
 onMounted(() => {
   cargarDatos();
 });
+
 </script>
 
 <template>
@@ -107,10 +109,10 @@ onMounted(() => {
       <div class="filtros-inner">
         <div class="filtros-categorias">
           <button
-            v-for="cat in categorias"
-            :key="cat"
-            :class="['filtro-btn', { activo: categoriaActiva === cat }]"
-            @click="categoriaActiva = cat"
+              v-for="cat in categorias"
+              :key="cat"
+              :class="['filtro-btn', { activo: categoriaActiva === cat }]"
+              @click="categoriaActiva = cat"
           >
             {{ cat }}
           </button>
@@ -119,10 +121,10 @@ onMounted(() => {
         <div class="busqueda-wrap">
           <span class="busqueda-icon">🔍</span>
           <input
-            v-model="busqueda"
-            type="text"
-            placeholder="Buscar plato..."
-            class="busqueda-input"
+              v-model="busqueda"
+              type="text"
+              placeholder="Buscar plato..."
+              class="busqueda-input"
           />
         </div>
       </div>
@@ -142,15 +144,16 @@ onMounted(() => {
 
       <div v-else class="platos-grid">
         <div
-          v-for="plato in platosFiltrados"
-          :key="plato.id"
-          class="plato-card"
+            v-for="plato in platosFiltrados"
+            :key="plato.id"
+            class="plato-card"
         >
-          <div class="plato-badges">
-            <span v-if="plato.popular" class="badge badge-popular">
-              ⭐ Popular
-            </span>
-            <span v-if="plato.nuevo" class="badge badge-nuevo">✦ Nuevo</span>
+          <div class="plato-img-wrap">
+            <img :src="plato.imagen" :alt="plato.nombre" class="plato-img" loading="lazy" />
+            <div class="plato-badges">
+              <span v-if="plato.popular" class="badge badge-popular">⭐ Popular</span>
+              <span v-if="plato.nuevo" class="badge badge-nuevo">✦ Nuevo</span>
+            </div>
           </div>
 
           <div class="plato-body">
@@ -173,7 +176,10 @@ onMounted(() => {
       </div>
     </section>
 
-    <Footer />
+    <footer>
+      <div class="footer-logo">La <span>Brasa</span></div>
+      <p class="footer-copy">© 2026 La Brasa Restaurante · Granada</p>
+    </footer>
   </div>
 </template>
 
@@ -188,26 +194,31 @@ onMounted(() => {
   box-sizing: border-box;
 }
 
-#catalogo-app {
+:root {
   --cream: #f5f0e8;
   --dark: #1a1410;
   --brown: #6b4c2a;
   --gold: #c9963a;
   --warm: #e8ddd0;
   --text: #2d2520;
+}
 
+#catalogo-app {
   font-family: "Montserrat", sans-serif;
   background: var(--cream);
   color: var(--text);
   min-height: 100vh;
 }
 
-/* HEADER */
+/* resto de tu CSS exactamente igual */
+
+/* ─── HEADER ─── */
 .catalogo-header {
   position: relative;
-  height: 56vh;
-  min-height: 430px;
+  height: 52vh;
+  min-height: 360px;
   margin-top: 0;
+  padding-top: 72px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -217,23 +228,23 @@ onMounted(() => {
   position: absolute;
   inset: 0;
   background: url("https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1600&auto=format&fit=crop&q=80")
-    center/cover no-repeat;
+  center/cover no-repeat;
   transform: scale(1.05);
 }
 .catalogo-header-overlay {
   position: absolute;
   inset: 0;
   background: linear-gradient(
-    160deg,
-    rgba(26, 20, 16, 0.78) 0%,
-    rgba(26, 20, 16, 0.5) 100%
+      160deg,
+      rgba(26, 20, 16, 0.78) 0%,
+      rgba(26, 20, 16, 0.5) 100%
   );
 }
 .catalogo-header-content {
   position: relative;
   text-align: center;
   color: var(--cream);
-  padding: 96px 1.5rem 0;
+  padding: 0 1.5rem;
   animation: fadeUp 0.9s ease both;
 }
 @keyframes fadeUp {
@@ -252,12 +263,10 @@ onMounted(() => {
   text-transform: uppercase;
   color: var(--gold);
   margin-bottom: 1rem;
-  font-family: "Montserrat", sans-serif;
-  font-weight: 500;
 }
 .hero-title {
   font-family: "Cormorant Garamond", serif;
-  font-size: clamp(3.25rem, 7vw, 6rem);
+  font-size: clamp(3rem, 8vw, 6rem);
   font-weight: 300;
   line-height: 1;
   margin-bottom: 1.2rem;
@@ -267,16 +276,16 @@ onMounted(() => {
   color: var(--gold);
 }
 .hero-sub {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 300;
   letter-spacing: 0.08em;
-  opacity: 0.82;
-  max-width: 460px;
+  opacity: 0.8;
+  max-width: 440px;
   margin: 0 auto;
   line-height: 1.8;
 }
 
-/* FILTROS */
+/* ─── FILTROS ─── */
 .filtros-section {
   background: var(--dark);
   padding: 2rem 5vw;
@@ -353,7 +362,7 @@ onMounted(() => {
   border-color: var(--gold);
 }
 
-/* PLATOS */
+/* ─── PLATOS ─── */
 .platos-section {
   padding: 4rem 5vw 6rem;
 }
@@ -365,19 +374,32 @@ onMounted(() => {
   gap: 2rem;
 }
 .plato-card {
-  position: relative;
   background: #fff;
   border-radius: 4px;
   overflow: hidden;
   border: 1px solid rgba(107, 76, 42, 0.1);
   transition:
-    transform 0.3s,
-    box-shadow 0.3s;
+      transform 0.3s,
+      box-shadow 0.3s;
   animation: fadeUp 0.5s ease both;
 }
 .plato-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 16px 48px rgba(26, 20, 16, 0.12);
+}
+.plato-img-wrap {
+  position: relative;
+  height: 210px;
+  overflow: hidden;
+}
+.plato-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+.plato-card:hover .plato-img {
+  transform: scale(1.06);
 }
 .plato-badges {
   position: absolute;
@@ -443,7 +465,7 @@ onMounted(() => {
   color: var(--brown);
 }
 
-/* VACÍO */
+/* ─── VACÍO ─── */
 .vacio {
   grid-column: 1 / -1;
   text-align: center;
@@ -459,7 +481,7 @@ onMounted(() => {
   letter-spacing: 0.08em;
 }
 
-/* CARGA / ERROR */
+/* ─── CARGA / ERROR ─── */
 .estado-carga,
 .estado-error {
   display: flex;
@@ -502,15 +524,39 @@ onMounted(() => {
   border-radius: 2px;
   cursor: pointer;
   transition:
-    background 0.25s,
-    color 0.25s;
+      background 0.25s,
+      color 0.25s;
 }
 .reintentar-btn:hover {
   background: var(--gold);
   color: var(--dark);
 }
 
-/* RESPONSIVE */
+/* ─── FOOTER ─── */
+footer {
+  background: var(--dark);
+  padding: 2.5rem 5vw;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.footer-logo {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 1.3rem;
+  color: var(--cream);
+  font-weight: 400;
+}
+.footer-logo span {
+  color: var(--gold);
+  font-style: italic;
+}
+.footer-copy {
+  font-size: 0.68rem;
+  color: rgba(245, 240, 232, 0.35);
+  letter-spacing: 0.08em;
+}
+
+/* ─── RESPONSIVE ─── */
 @media (max-width: 700px) {
   .filtros-inner {
     flex-direction: column;

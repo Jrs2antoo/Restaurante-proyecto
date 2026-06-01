@@ -1,155 +1,152 @@
 <template>
-  <div class="admin-wrapper">
-    <Cabecera />
-    <div class="admin-container">
+  <div class="admin-container">
+    <aside class="admin-sidebar">
+      <div class="sidebar-logo">La <span>Brasa</span></div>
+      <nav class="sidebar-nav">
+        <button :class="{ active: currentTab === 'usuarios' }" @click="currentTab = 'usuarios'">👤 Usuarios</button>
+        <button :class="{ active: currentTab === 'productos' }" @click="currentTab = 'productos'">🍽️ Productos</button>
+        <button :class="{ active: currentTab === 'reservas' }" @click="currentTab = 'reservas'">📅 Reservas</button>
+        <button :class="{ active: currentTab === 'mesas' }" @click="currentTab = 'mesas'">🪑 Mesas</button>
+      </nav>
+      <button class="btn-logout" @click="handleLogout">🚪 Cerrar sesión</button>
+    </aside>
 
-      <!-- SIDEBAR -->
-      <aside class="admin-sidebar">
-        <nav class="sidebar-nav">
-          <button :class="{ active: currentTab === 'usuarios' }" @click="currentTab = 'usuarios'">👤 Usuarios</button>
-          <button :class="{ active: currentTab === 'productos' }" @click="currentTab = 'productos'">🍽️ Productos</button>
-          <button :class="{ active: currentTab === 'reservas' }" @click="currentTab = 'reservas'">📅 Reservas</button>
-          <button :class="{ active: currentTab === 'mesas' }" @click="currentTab = 'mesas'">🪑 Mesas</button>
-        </nav>
-      </aside>
+    <main class="admin-main">
+      <header class="admin-header">
+        <h1>{{ tabTitles[currentTab] }}</h1>
+        <button v-if="currentTab === 'productos'" class="btn-add" @click="openAddProducto">+ Nuevo Producto</button>
+        <button v-if="currentTab === 'mesas'" class="btn-add" @click="openAddMesa">+ Nueva Mesa</button>
+        <button v-if="currentTab === 'reservas'" class="btn-add" @click="openAddReserva">+ Nueva Reserva</button>
+      </header>
 
-      <!-- MAIN -->
-      <main class="admin-main">
-        <header class="admin-header">
-          <h1>{{ tabTitles[currentTab] }}</h1>
-          <button v-if="currentTab === 'productos'" class="btn-add" @click="openAddProducto">+ Nuevo Producto</button>
-          <button v-if="currentTab === 'mesas'" class="btn-add" @click="openAddMesa">+ Nueva Mesa</button>
-          <button v-if="currentTab === 'reservas'" class="btn-add" @click="openAddReserva">+ Nueva Reserva</button>
-        </header>
+      <div v-if="loading" class="state-msg">Conectando con la base de datos...</div>
+      <div v-else-if="error" class="state-msg error">{{ error }}</div>
 
-        <div v-if="loading" class="state-msg">Conectando con la base de datos...</div>
-        <div v-else-if="error" class="state-msg error">{{ error }}</div>
+      <div v-else class="admin-card table-wrapper">
+        <div class="table-wrapper">
 
-        <div v-else class="admin-card table-wrapper">
-          <div class="table-wrapper">
+          <!-- TABLA USUARIOS -->
+          <table v-if="currentTab === 'usuarios'">
+            <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nombre</th>
+              <th>Apellidos</th>
+              <th>Email</th>
+              <th>Rol</th>
+              <th>Acciones</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr v-for="u in usuarios" :key="u.idUsuario">
+              <td>{{ u.idUsuario }}</td>
+              <td>{{ u.nombre }}</td>
+              <td>{{ u.apellido }}</td>
+              <td>{{ u.email }}</td>
+              <td><span class="badge" :class="u.rol">{{ u.rol }}</span></td>
+              <td class="actions">
+                <button class="btn-edit" @click="openEditUsuario(u)">✏️ Editar</button>
+                <button class="btn-delete" @click="confirmDelete('usuario', u.idUsuario)">🗑️ Eliminar</button>
+              </td>
+            </tr>
+            </tbody>
+          </table>
 
-            <!-- TABLA USUARIOS -->
-            <table v-if="currentTab === 'usuarios'">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Nombre</th>
-                  <th>Apellidos</th>
-                  <th>Email</th>
-                  <th>Rol</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="u in usuarios" :key="u.idUsuario">
-                  <td>{{ u.idUsuario }}</td>
-                  <td>{{ u.nombre }}</td>
-                  <td>{{ u.apellido }}</td>
-                  <td>{{ u.email }}</td>
-                  <td><span class="badge" :class="u.rolVisual">{{ u.rolVisual }}</span></td>
-                  <td class="actions">
-                    <button class="btn-edit" @click="openEditUsuario(u)">✏️ Editar</button>
-                    <button class="btn-delete" @click="confirmDelete('usuario', u.idUsuario)">🗑️ Eliminar</button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+          <!-- TABLA PRODUCTOS -->
+          <table v-if="currentTab === 'productos'">
+            <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nombre</th>
+              <th>Precio</th>
+              <th>Categoría</th>
+              <th>Descripción</th>
+              <th>Disponible</th>
+              <th>Acciones</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr v-for="p in productos" :key="p.idProducto">
+              <td>{{ p.idProducto }}</td>
+              <td>{{ p.nombre }}</td>
+              <td>{{ p.precio }}€</td>
+              <td>{{ p.categoria }}</td>
+              <td class="td-desc">{{ p.descripcion || '—' }}</td>
+              <td><span class="badge" :class="p.disponible ? 'disponible' : 'nodisponible'">{{ p.disponible ? 'Sí' : 'No' }}</span></td>
+              <td class="actions">
+                <button class="btn-edit" @click="openEditProducto(p)">✏️ Editar</button>
+                <button class="btn-delete" @click="confirmDelete('producto', p.idProducto)">🗑️ Eliminar</button>
+              </td>
+            </tr>
+            </tbody>
+          </table>
 
-            <!-- TABLA PRODUCTOS -->
-            <table v-if="currentTab === 'productos'">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Nombre</th>
-                  <th>Precio</th>
-                  <th>Categoría</th>
-                  <th>Descripción</th>
-                  <th>Disponible</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="p in productos" :key="p.idProducto">
-                  <td>{{ p.idProducto }}</td>
-                  <td>{{ p.nombre }}</td>
-                  <td>{{ p.precio }}€</td>
-                  <td>{{ p.categoria }}</td>
-                  <td class="td-desc">{{ p.descripcion || '—' }}</td>
-                  <td><span class="badge" :class="p.disponible ? 'disponible' : 'nodisponible'">{{ p.disponible ? 'Sí' : 'No' }}</span></td>
-                  <td class="actions">
-                    <button class="btn-edit" @click="openEditProducto(p)">✏️ Editar</button>
-                    <button class="btn-delete" @click="confirmDelete('producto', p.idProducto)">🗑️ Eliminar</button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+          <!-- TABLA MESAS -->
+          <table v-if="currentTab === 'mesas'">
+            <thead>
+            <tr>
+              <th>ID Mesa</th>
+              <th>Capacidad</th>
+              <th>Ubicación</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr v-for="m in mesas" :key="m.idMesa">
+              <td><strong>#{{ m.idMesa }}</strong></td>
+              <td>{{ m.capacidad }} personas</td>
+              <td>{{ m.ubicacion }}</td>
+              <td>
+                <span class="badge" :class="m.disponible ? 'disponible' : 'nodisponible'">
+                  {{ m.disponible ? 'Disponible' : 'Ocupada' }}
+                </span>
+              </td>
+              <td class="actions">
+                <button class="btn-edit" @click="openEditMesa(m)">✏️ Editar</button>
+                <button class="btn-delete" @click="confirmDelete('mesa', m.idMesa)">🗑️ Eliminar</button>
+              </td>
+            </tr>
+            </tbody>
+          </table>
 
-            <!-- TABLA MESAS -->
-            <table v-if="currentTab === 'mesas'">
-              <thead>
-                <tr>
-                  <th>ID Mesa</th>
-                  <th>Capacidad</th>
-                  <th>Ubicación</th>
-                  <th>Estado</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="m in mesas" :key="m.idMesa">
-                  <td><strong>#{{ m.idMesa }}</strong></td>
-                  <td>{{ m.capacidad }} personas</td>
-                  <td>{{ m.ubicacion }}</td>
-                  <td>
-                    <span class="badge" :class="m.disponible ? 'disponible' : 'nodisponible'">
-                      {{ m.disponible ? 'Disponible' : 'Ocupada' }}
-                    </span>
-                  </td>
-                  <td class="actions">
-                    <button class="btn-edit" @click="openEditMesa(m)">✏️ Editar</button>
-                    <button class="btn-delete" @click="confirmDelete('mesa', m.idMesa)">🗑️ Eliminar</button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-
-            <!-- TABLA RESERVAS -->
-            <table v-if="currentTab === 'reservas'">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Mesa</th>
-                  <th>Fecha</th>
-                  <th>Hora</th>
-                  <th>Personas</th>
-                  <th>Fianza</th>
-                  <th>Estado Pago</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="r in reservas" :key="r.idReserva">
-                  <td>{{ r.idReserva }}</td>
-                  <td>Mesa {{ r.idMesa }}</td>
-                  <td>{{ r.fecha }}</td>
-                  <td>{{ formatHora(r.hora) }}</td>
-                  <td>{{ r.numPersonas }}</td>
-                  <td>{{ formatFianza(r.fianza, r.numPersonas) }}</td>
-                  <td><span class="badge" :class="r.estadoPago === 'pagado' ? 'disponible' : 'nodisponible'">{{ r.estadoPago }}</span></td>
-                  <td class="actions">
-                    <button class="btn-edit" @click="openEditReserva(r)">✏️ Editar</button>
-                    <button class="btn-delete" @click="confirmDelete('reserva', r.idReserva)">🗑️ Eliminar</button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-
-          </div>
+          <!-- TABLA RESERVAS -->
+          <table v-if="currentTab === 'reservas'">
+            <thead>
+            <tr>
+              <th>ID</th>
+              <th>Mesa</th>
+              <th>Fecha</th>
+              <th>Hora</th>
+              <th>Personas</th>
+              <th>Fianza</th>
+              <th>Estado Pago</th>
+              <th>Acciones</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr v-for="r in reservas" :key="r.idReserva">
+              <td>{{ r.idReserva }}</td>
+              <td>Mesa {{ r.idMesa }}</td>
+              <td>{{ r.fecha }}</td>
+              <td>{{ r.hora }}</td>
+              <td>{{ r.numPersonas }}</td>
+              <td>{{ r.fianza }}€</td>
+              <td><span class="badge" :class="r.estadoPago === 'pagado' ? 'disponible' : 'nodisponible'">{{ r.estadoPago }}</span></td>
+              <td class="actions">
+                <button class="btn-edit" @click="openEditReserva(r)">✏️ Editar</button>
+                <button class="btn-delete" @click="confirmDelete('reserva', r.idReserva)">🗑️ Eliminar</button>
+              </td>
+            </tr>
+            </tbody>
+          </table>
         </div>
-      </main>
-    </div>
+      </div>
+    </main>
 
-    <!-- ═══ MODAL EDITAR / CREAR USUARIO ═══ -->
+    <!-- ═══════════════════════════════════
+         MODAL EDITAR / CREAR USUARIO
+    ═══════════════════════════════════ -->
     <div v-if="modalUsuario" class="modal-overlay" @click.self="modalUsuario = false">
       <div class="modal">
         <h2>Editar Usuario</h2>
@@ -180,7 +177,9 @@
       </div>
     </div>
 
-    <!-- ═══ MODAL EDITAR / CREAR PRODUCTO ═══ -->
+    <!-- ═══════════════════════════════════
+         MODAL EDITAR / CREAR PRODUCTO
+    ═══════════════════════════════════ -->
     <div v-if="modalProducto" class="modal-overlay" @click.self="modalProducto = false">
       <div class="modal">
         <h2>{{ editingProducto.idProducto ? 'Editar Producto' : 'Nuevo Producto' }}</h2>
@@ -211,6 +210,18 @@
             <option :value="false">No</option>
           </select>
         </div>
+        <div class="form-group">
+          <label>Imagen del producto</label>
+          <div class="img-upload-area">
+            <img v-if="editingProducto.imagen_url" :src="editingProducto.imagen_url" class="img-preview" />
+            <div v-else class="img-placeholder">📷 Sin imagen</div>
+            <input type="file" accept="image/*" @change="onImageSelected" class="file-input" ref="fileInputRef" />
+            <button type="button" class="btn-upload" @click="fileInputRef.click()" :disabled="uploadingImage">
+              {{ uploadingImage ? 'Subiendo…' : '📤 Seleccionar imagen' }}
+            </button>
+            <button v-if="editingProducto.imagen_url" type="button" class="btn-remove-img" @click="editingProducto.imagen_url = ''">✕ Quitar imagen</button>
+          </div>
+        </div>
         <div class="modal-actions">
           <button class="btn-cancel" @click="modalProducto = false">Cancelar</button>
           <button class="btn-save" @click="saveProducto">Guardar en Base de Datos</button>
@@ -218,7 +229,9 @@
       </div>
     </div>
 
-    <!-- ═══ MODAL EDITAR / CREAR MESA ═══ -->
+    <!-- ═══════════════════════════════════
+         MODAL EDITAR / CREAR MESA
+    ═══════════════════════════════════ -->
     <div v-if="modalMesa" class="modal-overlay" @click.self="modalMesa = false">
       <div class="modal">
         <h2>{{ editingMesa.idMesa ? 'Editar Mesa #' + editingMesa.idMesa : 'Nueva Mesa' }}</h2>
@@ -228,11 +241,7 @@
         </div>
         <div class="form-group">
           <label>Ubicación</label>
-          <select v-model="editingMesa.ubicacion">
-            <option v-for="ubicacion in ubicacionesMesa" :key="ubicacion" :value="ubicacion">
-              {{ ubicacion }}
-            </option>
-          </select>
+          <input v-model="editingMesa.ubicacion" type="text" placeholder="Ej: Terraza, Ventana..." />
         </div>
         <div class="form-group">
           <label>Estado</label>
@@ -248,7 +257,9 @@
       </div>
     </div>
 
-    <!-- ═══ MODAL EDITAR / CREAR RESERVA ═══ -->
+    <!-- ═══════════════════════════════════
+         MODAL EDITAR / CREAR RESERVA
+    ═══════════════════════════════════ -->
     <div v-if="modalReserva" class="modal-overlay" @click.self="modalReserva = false">
       <div class="modal">
         <h2>{{ editingReserva.idReserva ? 'Editar Reserva #' + editingReserva.idReserva : 'Nueva Reserva' }}</h2>
@@ -287,7 +298,9 @@
       </div>
     </div>
 
-    <!-- ═══ MODAL CONFIRMACIÓN ELIMINAR ═══ -->
+    <!-- ═══════════════════════════════════
+         MODAL CONFIRMACIÓN ELIMINAR
+    ═══════════════════════════════════ -->
     <div v-if="deleteConfirm.show" class="modal-overlay">
       <div class="modal modal-sm">
         <div class="delete-icon">🗑️</div>
@@ -300,22 +313,61 @@
       </div>
     </div>
 
-    <!-- TOAST -->
+    <!-- TOAST NOTIFICACIÓN -->
     <div v-if="toast.show" :class="['toast', toast.type]">{{ toast.msg }}</div>
-
-    <Footer />
   </div>
 </template>
 
 <script setup>
 import { ref, watch } from "vue";
-import { getAuth, signOut, deleteUser } from "firebase/auth";
-import { getFirestore, collection, query, where, getDocs, deleteDoc } from "firebase/firestore";
+import { getAuth, signOut } from "firebase/auth";
 import { useRouter } from "vue-router";
-import Cabecera from "./Cabecera.vue";
-import Footer from "./Footer.vue";
+import { createClient } from "@supabase/supabase-js";
 
 const API = "/api";
+const categoriasProducto = ["Todo", "Entrantes", "Carnes", "Pescados", "Postres", "Bebidas"];
+const formatearPrecioParaApi = (precio) => Number(precio).toFixed(2).replace(".", ",");
+const productoSoportaImagenUrl = ref(false);
+
+// ── Supabase Storage ─────────────────────────────────────────
+const BUCKET = "productos-img";
+
+let _supabase = null;
+const getSupabase = () => {
+  if (_supabase) return _supabase;
+  const url = import.meta.env.VITE_SUPABASE_URL;
+  const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  if (!url || !key) throw new Error("Supabase no configurado: falta VITE_SUPABASE_URL o VITE_SUPABASE_ANON_KEY en el .env");
+  _supabase = createClient(url, key);
+  return _supabase;
+};
+
+const fileInputRef = ref(null);
+const uploadingImage = ref(false);
+
+const onImageSelected = async (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+  uploadingImage.value = true;
+  try {
+    const supabase = getSupabase();
+    const ext = file.name.split(".").pop();
+    const path = `productos/${Date.now()}.${ext}`;
+    const { error: uploadError } = await supabase.storage
+        .from(BUCKET)
+        .upload(path, file, { upsert: true });
+    if (uploadError) throw uploadError;
+    const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
+    editingProducto.value.imagen_url = data.publicUrl;
+    showToast("Imagen subida correctamente.");
+  } catch (err) {
+    console.error(err);
+    showToast("Error al subir la imagen.", "error");
+  } finally {
+    uploadingImage.value = false;
+    if (fileInputRef.value) fileInputRef.value.value = "";
+  }
+};
 const router = useRouter();
 
 const usuarios = ref([]);
@@ -333,19 +385,7 @@ const tabTitles = {
   mesas: "Configuración de Salón"
 };
 
-const categoriasProducto = [
-  "Entrantes",
-  "Carnes",
-  "Pescados",
-  "Postres",
-  "Bebidas"
-];
-
-const ubicacionesMesa = [
-  "Interior",
-  "Terraza"
-];
-
+// Modales
 const modalUsuario  = ref(false);
 const modalProducto = ref(false);
 const modalMesa     = ref(false);
@@ -356,6 +396,7 @@ const editingMesa     = ref({});
 const editingReserva  = ref({});
 const deleteConfirm   = ref({ show: false, type: "", id: null });
 
+// Toast
 const toast = ref({ show: false, type: "success", msg: "" });
 const showToast = (msg, type = "success") => {
   toast.value = { show: true, type, msg };
@@ -363,66 +404,28 @@ const showToast = (msg, type = "success") => {
 };
 
 // ─── CARGA DE DATOS ───────────────────────────────────
-const normalizarFianza = (fianza, personas) => {
-  const importe = Number(fianza);
-  if (!Number.isFinite(importe)) return 0;
-
-  const importeEsperado = Number(personas || 0) * 2.5;
-
-  if (importeEsperado && Math.abs(importe / 10 - importeEsperado) < 0.01) {
-    return importe / 10;
-  }
-
-  return importe;
-};
-
-const formatFianza = (fianza, personas) =>
-  `${normalizarFianza(fianza, personas).toLocaleString("es-ES", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}€`;
-
-const formatHora = (hora) => String(hora || "").substring(0, 5);
-
-const cargarUsuariosConRolVisual = async () => {
-  const [usuariosData, administradoresData] = await Promise.all([
-    fetch(`${API}/Usuario`).then(res => {
-      if (!res.ok) throw new Error();
-      return res.json();
-    }),
-    fetch(`${API}/Administrador`).then(res => res.ok ? res.json() : { value: [] })
-  ]);
-
-  const administradoresIds = new Set(
-    (administradoresData.value || administradoresData || []).map(a => Number(a.idUsuario))
-  );
-
-  usuarios.value = (usuariosData.value || usuariosData || []).map(u => ({
-    ...u,
-    rolVisual: administradoresIds.has(Number(u.idUsuario)) ? "admin" : u.rol
-  }));
-};
-
 const refresh = async () => {
   loading.value = true;
   error.value = "";
   try {
-    if (currentTab.value === 'usuarios') {
-      await cargarUsuariosConRolVisual();
-      return;
-    }
-
     const endpoint = currentTab.value === 'usuarios'  ? 'Usuario'  :
-                     currentTab.value === 'productos' ? 'Producto' :
-                     currentTab.value === 'reservas'  ? 'Reserva'  : 'Mesa';
+        currentTab.value === 'productos' ? 'Producto' :
+            currentTab.value === 'reservas'  ? 'Reserva'  : 'Mesa';
 
     const res = await fetch(`${API}/${endpoint}`);
     if (!res.ok) throw new Error();
     const data = await res.json();
+    const registros = data.value || data;
 
-    if (currentTab.value === 'productos') productos.value = data.value || data;
-    if (currentTab.value === 'reservas')  reservas.value  = data.value || data;
-    if (currentTab.value === 'mesas')     mesas.value     = data.value || data;
+    if (currentTab.value === 'usuarios')  usuarios.value  = registros;
+    if (currentTab.value === 'productos') {
+      productos.value = registros;
+      productoSoportaImagenUrl.value = registros.some((producto) =>
+          Object.prototype.hasOwnProperty.call(producto, "imagen_url")
+      );
+    }
+    if (currentTab.value === 'reservas')  reservas.value  = registros;
+    if (currentTab.value === 'mesas')     mesas.value     = registros;
   } catch {
     error.value = "Error al conectar con la API.";
   } finally {
@@ -434,53 +437,61 @@ watch(currentTab, refresh, { immediate: true });
 
 // ─── USUARIOS ─────────────────────────────────────────
 const openEditUsuario = (u) => {
-  editingUsuario.value = { ...u, rol: u.rolVisual || u.rol };
+  editingUsuario.value = { ...u };
   modalUsuario.value = true;
 };
 
 const saveUsuario = async () => {
   const { idUsuario, nombre, apellido, rol } = editingUsuario.value;
-  const rolUsuario = rol === "admin" ? "empleado" : rol;
-
   try {
     const res = await fetch(`${API}/Usuario/idUsuario/${idUsuario}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nombre, apellido, rol: rolUsuario })
+      body: JSON.stringify({ nombre, apellido, rol })
     });
-    if (!res.ok) throw new Error(await res.text());
-
-    await syncUsuarioRol(idUsuario, rol);
-
+    if (!res.ok) throw new Error();
     modalUsuario.value = false;
     showToast("Usuario actualizado correctamente.");
     refresh();
-  } catch (e) {
-    console.error("Error actualizando usuario:", e);
+  } catch {
     showToast("Error al actualizar el usuario.", "error");
   }
 };
 
 // ─── PRODUCTOS ────────────────────────────────────────
 const openAddProducto = () => {
-  editingProducto.value = { nombre: "", precio: "", categoria: "Entrantes", descripcion: "", disponible: true };
+  editingProducto.value = { nombre: "", precio: "", categoria: "Todo", descripcion: "", disponible: true, imagen_url: "" };
   modalProducto.value = true;
 };
 
 const openEditProducto = (p) => {
-  editingProducto.value = { ...p };
+  editingProducto.value = {
+    ...p,
+    categoria: categoriasProducto.includes(p.categoria) ? p.categoria : "Todo",
+  };
   modalProducto.value = true;
 };
 
 const saveProducto = async () => {
-  const { idProducto, nombre, precio, categoria, descripcion, disponible } = editingProducto.value;
+  const { idProducto, nombre, precio, categoria, descripcion, disponible, imagen_url } = editingProducto.value;
+  const precioNumero = Number(precio);
+  if (!nombre?.trim() || !Number.isFinite(precioNumero) || !categoriasProducto.includes(categoria)) {
+    showToast("Revisa nombre, precio y categoría del producto.", "error");
+    return;
+  }
+
   const payload = {
-    nombre,
-    precio: parseFloat(precio),
+    nombre: nombre.trim(),
+    precio: formatearPrecioParaApi(precioNumero),
     categoria,
-    descripcion,
+    descripcion: descripcion || null,
     disponible: disponible === true || disponible === "true"
   };
+
+  if (productoSoportaImagenUrl.value) {
+    payload.imagen_url = imagen_url || null;
+  }
+
   try {
     const url    = idProducto ? `${API}/Producto/idProducto/${idProducto}` : `${API}/Producto`;
     const method = idProducto ? "PATCH" : "POST";
@@ -489,9 +500,17 @@ const saveProducto = async () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
-    if (!res.ok) throw new Error();
+    if (!res.ok) {
+      const detalle = await res.text();
+      console.error("Error al guardar producto:", res.status, detalle, payload);
+      throw new Error(detalle || `HTTP ${res.status}`);
+    }
     modalProducto.value = false;
-    showToast(idProducto ? "Producto actualizado." : "Producto creado.");
+    if (imagen_url && !productoSoportaImagenUrl.value) {
+      showToast("Producto guardado, pero falta activar imagen_url en la API.", "error");
+    } else {
+      showToast(idProducto ? "Producto actualizado." : "Producto creado.");
+    }
     refresh();
   } catch {
     showToast("Error al guardar el producto.", "error");
@@ -500,7 +519,7 @@ const saveProducto = async () => {
 
 // ─── MESAS ────────────────────────────────────────────
 const openAddMesa = () => {
-  editingMesa.value = { capacidad: 2, ubicacion: "Interior", disponible: true };
+  editingMesa.value = { capacidad: 2, ubicacion: "", disponible: true };
   modalMesa.value = true;
 };
 
@@ -576,134 +595,6 @@ const confirmDelete = (type, id) => {
   deleteConfirm.value = { show: true, type, id };
 };
 
-const deleteApi = async (url, { ignoreNotFound = false } = {}) => {
-  const res = await fetch(url, { method: "DELETE" });
-  if (ignoreNotFound && res.status === 404) return;
-  if (!res.ok) {
-    const msg = await res.text().catch(() => "");
-    throw new Error(msg || `Error ${res.status} al eliminar ${url}`);
-  }
-};
-
-const fetchApiList = async (entity, filter = "") => {
-  const url = filter
-      ? `${API}/${entity}?$filter=${encodeURIComponent(filter)}`
-      : `${API}/${entity}`;
-  const res = await fetch(url);
-  if (!res.ok) return [];
-  const data = await res.json();
-  return data.value || data || [];
-};
-
-const postApi = async (url, body, { ignoreConflict = false } = {}) => {
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-
-  if (ignoreConflict && (res.status === 409 || res.status === 400)) return;
-  if (!res.ok) {
-    const msg = await res.text().catch(() => "");
-    throw new Error(msg || `Error ${res.status} al crear ${url}`);
-  }
-};
-
-const ensureEmpleado = async (idUsuario, puesto = "mesero") => {
-  const id = Number(idUsuario);
-  const empleado = await fetchApiList("Empleado", `idUsuario eq ${id}`);
-
-  if (empleado.length) {
-    await fetch(`${API}/Empleado/idUsuario/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ puesto }),
-    });
-    return;
-  }
-
-  await postApi(`${API}/Empleado`, { idUsuario: id, puesto }, { ignoreConflict: true });
-};
-
-const ensureAdministrador = async (idUsuario) => {
-  const id = Number(idUsuario);
-  const administrador = await fetchApiList("Administrador", `idUsuario eq ${id}`);
-
-  if (!administrador.length) {
-    await postApi(`${API}/Administrador`, { idUsuario: id }, { ignoreConflict: true });
-  }
-};
-
-const syncUsuarioRol = async (idUsuario, rolVisual) => {
-  if (rolVisual === "admin") {
-    await ensureEmpleado(idUsuario, "administrador");
-    await ensureAdministrador(idUsuario);
-    return;
-  }
-
-  if (rolVisual === "empleado") {
-    await deleteApi(`${API}/Administrador/idUsuario/${Number(idUsuario)}`, { ignoreNotFound: true });
-    await ensureEmpleado(idUsuario, "mesero");
-    return;
-  }
-
-  if (rolVisual === "cliente") {
-    const id = Number(idUsuario);
-    await deleteApi(`${API}/Administrador/idUsuario/${id}`, { ignoreNotFound: true });
-    await deleteApi(`${API}/Empleado/idUsuario/${id}`, { ignoreNotFound: true });
-    const clientes = await fetchApiList("Cliente", `idUsuario eq ${id}`);
-    if (!clientes.length) {
-      await postApi(`${API}/Cliente`, { idUsuario: id }, { ignoreConflict: true });
-    }
-  }
-};
-
-const deleteUsuarioRelations = async (idUsuario) => {
-  const id = Number(idUsuario);
-  const [reservasUsuario, cliente, empleado, cocinero, administrador] = await Promise.all([
-    fetchApiList("Reserva", `idUsuario eq ${id}`),
-    fetchApiList("Cliente", `idUsuario eq ${id}`),
-    fetchApiList("Empleado", `idUsuario eq ${id}`),
-    fetchApiList("Cocinero", `idUsuario eq ${id}`),
-    fetchApiList("Administrador", `idUsuario eq ${id}`)
-  ]);
-
-  await Promise.all(reservasUsuario.map(r => deleteApi(`${API}/Reserva/idReserva/${r.idReserva}`)));
-  if (cocinero.length) await deleteApi(`${API}/Cocinero/idUsuario/${id}`);
-  if (administrador.length) await deleteApi(`${API}/Administrador/idUsuario/${id}`);
-  if (empleado.length) await deleteApi(`${API}/Empleado/idUsuario/${id}`);
-  if (cliente.length) await deleteApi(`${API}/Cliente/idUsuario/${id}`);
-};
-
-const cleanupFirebaseUser = async (email) => {
-  if (!email) return;
-  await deleteFromFirestore(email);
-  await deleteFromFirebaseAuth(email);
-};
-
-async function deleteFromFirestore(email) {
-  try {
-    const db = getFirestore();
-    const q = query(collection(db, "usuarios"), where("email", "==", email));
-    const snap = await getDocs(q);
-    await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
-  } catch (e) {
-    console.warn("Firestore: no se pudo eliminar el documento", e);
-  }
-}
-
-async function deleteFromFirebaseAuth(email) {
-  try {
-    const auth = getAuth();
-    const currentUser = auth.currentUser;
-    if (currentUser && currentUser.email === email) {
-      await deleteUser(currentUser);
-    }
-  } catch (e) {
-    console.warn("Firebase Auth: error al eliminar", e);
-  }
-}
-
 const executeDelete = async () => {
   const { type, id } = deleteConfirm.value;
   const endpointMap = {
@@ -712,394 +603,448 @@ const executeDelete = async () => {
     reserva:  "Reserva/idReserva",
     mesa:     "Mesa/idMesa"
   };
-
   try {
-    let usuarioEmail = "";
-    if (type === "usuario") {
-      const usuario = usuarios.value.find(u => u.idUsuario === id);
-      usuarioEmail = usuario?.email || "";
-      await deleteUsuarioRelations(id);
-    }
-
-    await deleteApi(`${API}/${endpointMap[type]}/${id}`);
+    const res = await fetch(`${API}/${endpointMap[type]}/${id}`, { method: "DELETE" });
+    if (!res.ok) throw new Error();
     deleteConfirm.value.show = false;
     showToast("Registro eliminado correctamente.");
     refresh();
-
-    if (type === "usuario" && usuarioEmail) {
-      cleanupFirebaseUser(usuarioEmail);
-    }
-  } catch (e) {
-    console.error("Error al eliminar:", e);
+  } catch {
     deleteConfirm.value.show = false;
     showToast("No se pudo eliminar el registro.", "error");
   }
+};
+
+const handleLogout = () => {
+  signOut(getAuth());
+  router.push("/login");
 };
 </script>
 
 <style scoped>
 @import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Montserrat:wght@400;600&display=swap");
 
-/* ── WRAPPER: ocupa el espacio bajo el NavBar ── */
-.admin-wrapper {
-  padding-top: 72px;
-  min-height: 100vh;
-  background: #f7f2ea;
-  box-sizing: border-box;
+/* ── RESET TOTAL SCOPED ── */
+.admin-container { all: initial; }
+
+.admin-container,
+.admin-container * {
+  box-sizing: border-box !important;
+  font-family: "Montserrat", sans-serif;
 }
 
-/* ── LAYOUT: sidebar + contenido ── */
+/* ── LAYOUT ── */
 .admin-container {
-  display: flex;
-  min-height: calc(100vh - 72px);
+  display: flex !important;
+  flex-direction: row !important;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #fdfbf9;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1;
 }
 
 /* ── SIDEBAR ── */
 .admin-sidebar {
-  width: 208px;
-  min-width: 208px;
-  background: linear-gradient(180deg, #1a1410 0%, #22180f 100%);
-  display: flex;
-  flex-direction: column;
-  padding: 1.4rem 0;
-  position: sticky;
-  top: 72px;
-  height: calc(100vh - 72px);
-  overflow-y: auto;
+  width: 240px !important;
+  min-width: 240px !important;
+  max-width: 240px !important;
+  flex-shrink: 0 !important;
+  height: 100vh !important;
+  background: #1a1410 !important;
+  color: #f5f0e8 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  padding: 2rem 1rem !important;
+  position: relative !important;
+  z-index: 10 !important;
+  overflow: hidden !important;
 }
 
+.sidebar-logo {
+  font-family: "Cormorant Garamond", serif !important;
+  font-size: 1.8rem !important;
+  text-align: center !important;
+  color: #f5f0e8 !important;
+  letter-spacing: 1px !important;
+  padding-bottom: 1.5rem !important;
+  margin-bottom: 1rem !important;
+  border-bottom: 1px solid rgba(255,255,255,0.1) !important;
+  display: block !important;
+  width: 100% !important;
+  position: static !important;
+  float: none !important;
+  flex-shrink: 0 !important;
+  line-height: 1.3 !important;
+}
+.sidebar-logo span { color: #c9963a !important; }
+
+/* ── NAV (ACTUALIZADO) ── */
 .sidebar-nav {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  width: 100%;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 4px !important;
+  width: 100% !important;
+  flex: 1 !important;
+  overflow-y: auto !important;
+  position: static !important;
+  /* Eliminamos padding lateral del contenedor para que el hover llegue al borde */
+  margin: 0 -1rem !important;
 }
 
 .sidebar-nav button {
-  all: unset;
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  width: 100%;
-  padding: 11px 22px;
-  font-family: "Montserrat", sans-serif;
-  font-size: 0.82rem;
-  color: #a89880;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border-left: 3px solid transparent;
+  all: unset !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+  /* Aumentamos el padding lateral para compensar el margen negativo del contenedor */
+  padding: 12px 24px !important;
+  border-radius: 0 !important; /* Cambiado a 0 para que cubra de borde a borde rectamente */
+  font-family: "Montserrat", sans-serif !important;
+  font-size: 0.88rem !important;
+  color: #a89880 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  position: relative !important;
 }
 
 .sidebar-nav button.active {
-  color: #fff;
-  font-weight: 600;
-  border-left-color: #c9963a;
-  background: rgba(201, 150, 58, 0.1);
+  color: #fff !important;
+  font-weight: 600 !important;
 }
 
 .sidebar-nav button:hover:not(.active) {
-  color: #f5f0e8;
-  background: rgba(255, 255, 255, 0.05);
-  padding-left: 30px;
+
+  color: #f5f0e8 !important;
+  padding-left: 30px !important; /* Efecto sutil de desplazamiento al entrar */
+}
+
+/* ── LOGOUT ── */
+.btn-logout {
+  all: unset !important;
+  box-sizing: border-box !important;
+  display: block !important;
+  width: 100% !important;
+  flex-shrink: 0 !important;
+  background: transparent !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  color: #888 !important;
+  padding: 10px !important;
+  border-radius: 7px !important;
+  cursor: pointer !important;
+  font-family: "Montserrat", sans-serif !important;
+  font-size: 0.85rem !important;
+  text-align: center !important;
+  margin-top: 0.75rem !important;
+  transition: all 0.2s !important;
+}
+.btn-logout:hover {
+  background: rgba(211,47,47,0.15) !important;
+  color: #ef9a9a !important;
+  border-color: rgba(211,47,47,0.4) !important;
 }
 
 /* ── MAIN ── */
 .admin-main {
-  flex: 1;
-  min-width: 0;
-  padding: 2.6rem 3rem;
-  background: #f7f2ea;
+  flex: 1 !important;
+  min-width: 0 !important;
+  height: 100vh !important;
+  overflow-y: auto !important;
+  padding: 2.5rem 3rem !important;
+  background: #fdfbf9 !important;
+  display: block !important;
 }
 
 .admin-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  max-width: 1180px;
-  margin: 0 auto 1.8rem;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-bottom: 2rem !important;
 }
 
 .admin-header h1 {
-  font-family: "Cormorant Garamond", serif;
-  font-size: 2.2rem;
-  color: #1a1410;
-  margin: 0;
-  line-height: 1.2;
+  font-family: "Cormorant Garamond", serif !important;
+  font-size: 2.4rem !important;
+  color: #1a1410 !important;
+  margin: 0 !important;
+  line-height: 1.2 !important;
 }
 
 .btn-add {
-  background: #c9963a;
-  color: white;
-  border: none;
-  padding: 10px 22px;
-  border-radius: 6px;
-  font-family: "Montserrat", sans-serif;
-  font-weight: 600;
-  font-size: 0.88rem;
-  cursor: pointer;
-  white-space: nowrap;
-  flex-shrink: 0;
+  flex-shrink: 0 !important;
+  background: #c9963a !important;
+  color: white !important;
+  border: none !important;
+  padding: 10px 22px !important;
+  border-radius: 6px !important;
+  font-family: "Montserrat", sans-serif !important;
+  font-weight: 600 !important;
+  font-size: 0.88rem !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
 }
-.btn-add:hover { background: #b8852e; }
+.btn-add:hover { background: #b8852e !important; }
 
 /* ── CARD + TABLA ── */
 .admin-card {
-  background: white;
-  border-radius: 6px;
-  border: 1px solid #e9dfd2;
-  box-shadow: 0 10px 30px rgba(26, 20, 16, 0.05);
-  overflow: hidden;
-  max-width: 1180px;
-  margin: 0 auto;
+  background: white !important;
+  border-radius: 10px !important;
+  border: 1px solid #f0ebe4 !important;
+  box-shadow: 0 4px 25px rgba(0,0,0,0.04) !important;
+  overflow: hidden !important;
 }
 
-.table-wrapper { overflow-x: auto; }
+.table-wrapper { overflow-x: auto !important; }
 
 table {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 760px;
-  table-layout: fixed;
+  width: 100% !important;
+  border-collapse: collapse !important;
+  min-width: 580px !important;
 }
 
-th:last-child,
-td:last-child {
-  width: 210px;
-}
-
-thead tr { background: #fcfaf8; }
+thead tr { background: #fcfaf8 !important; }
 
 th {
-  padding: 0.85rem 1rem;
-  text-align: left;
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 1.2px;
-  color: #8a735a;
-  border-bottom: 2px solid #f0ebe4;
-  white-space: nowrap;
-  font-weight: 600;
+  padding: 0.9rem 1.2rem !important;
+  text-align: left !important;
+  font-size: 0.7rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1.2px !important;
+  color: #8a735a !important;
+  border-bottom: 2px solid #f0ebe4 !important;
+  white-space: nowrap !important;
+  font-weight: 600 !important;
 }
 
 td {
-  padding: 0.82rem 1rem;
-  border-bottom: 1px solid #f5f0ea;
-  font-size: 0.88rem;
-  color: #3a3830;
-  vertical-align: middle;
+  padding: 0.9rem 1.2rem !important;
+  border-bottom: 1px solid #f5f0ea !important;
+  font-size: 0.88rem !important;
+  color: #3a3830 !important;
+  vertical-align: middle !important;
 }
 
-tbody tr:last-child td { border-bottom: none; }
-tbody tr:hover { background: #fdfaf7; }
+tbody tr:last-child td { border-bottom: none !important; }
+tbody tr:hover { background: #fdfaf7 !important; }
 
 .td-desc {
-  max-width: 200px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  max-width: 200px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
 }
 
 /* ── BADGES ── */
 .badge {
-  display: inline-block;
-  padding: 3px 10px;
-  border-radius: 20px;
-  font-size: 0.72rem;
-  font-weight: 600;
+  display: inline-block !important;
+  padding: 3px 10px !important;
+  border-radius: 20px !important;
+  font-size: 0.72rem !important;
+  font-weight: 600 !important;
 }
-.badge.disponible   { background: #e8f5e9; color: #2e7d32; }
-.badge.nodisponible { background: #ffebee; color: #c62828; }
-.badge.admin        { background: #fff1f1; color: #d32f2f; }
-.badge.empleado     { background: #e3f2fd; color: #1565c0; }
-.badge.cliente      { background: #f3e5f5; color: #6a1b9a; }
-.badge.pendiente    { background: #fff8e1; color: #e65100; }
-.badge.pagado       { background: #e8f5e9; color: #2e7d32; }
-.badge.cancelado    { background: #ffebee; color: #c62828; }
+.badge.disponible   { background: #e8f5e9 !important; color: #2e7d32 !important; }
+.badge.nodisponible { background: #ffebee !important; color: #c62828 !important; }
+.badge.admin        { background: #fff1f1 !important; color: #d32f2f !important; }
+.badge.empleado     { background: #e3f2fd !important; color: #1565c0 !important; }
+.badge.cliente      { background: #f3e5f5 !important; color: #6a1b9a !important; }
+.badge.pendiente    { background: #fff8e1 !important; color: #e65100 !important; }
+.badge.pagado       { background: #e8f5e9 !important; color: #2e7d32 !important; }
+.badge.cancelado    { background: #ffebee !important; color: #c62828 !important; }
 
 /* ── ACCIONES ── */
 .actions {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  justify-content: flex-start;
+  display: flex !important;
+  gap: 6px !important;
+  align-items: center !important;
 }
 
 .btn-edit,
 .btn-delete {
-  border: 1px solid #e8e3dc;
-  padding: 5px 12px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 0.78rem;
-  font-weight: 600;
-  font-family: "Montserrat", sans-serif;
-  white-space: nowrap;
-  background: #f8f6f3;
-  color: #5a5040;
+  all: unset !important;
+  box-sizing: border-box !important;
+  border: 1px solid #e8e3dc !important;
+  padding: 5px 12px !important;
+  border-radius: 5px !important;
+  cursor: pointer !important;
+  font-size: 0.78rem !important;
+  font-weight: 600 !important;
+  font-family: "Montserrat", sans-serif !important;
+  white-space: nowrap !important;
+  background: #f8f6f3 !important;
+  color: #5a5040 !important;
 }
-.btn-edit:hover   { background: #eef2ff; color: #3f51b5; border-color: #c5cae9; }
-.btn-delete:hover { background: #fff0f0; color: #d32f2f; border-color: #ffcdd2; }
+.btn-edit:hover   { background: #eef2ff !important; color: #3f51b5 !important; border-color: #c5cae9 !important; }
+.btn-delete:hover { background: #fff0f0 !important; color: #d32f2f !important; border-color: #ffcdd2 !important; }
 
 /* ── MENSAJES ── */
 .state-msg {
-  padding: 4rem;
-  text-align: center;
-  color: #8a735a;
-  font-size: 0.95rem;
+  padding: 4rem !important;
+  text-align: center !important;
+  color: #8a735a !important;
+  font-size: 0.95rem !important;
 }
-.state-msg.error { color: #d32f2f; }
+.state-msg.error { color: #d32f2f !important; }
 
 /* ── MODALES ── */
 .modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(20,14,10,0.7);
-  backdrop-filter: blur(3px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
+  position: fixed !important;
+  inset: 0 !important;
+  background: rgba(20,14,10,0.7) !important;
+  backdrop-filter: blur(3px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 9999 !important;
 }
 
 .modal {
-  background: white;
-  padding: 2.5rem;
-  border-radius: 12px;
-  width: 90%;
-  max-width: 460px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  background: white !important;
+  padding: 2.5rem !important;
+  border-radius: 12px !important;
+  width: 90% !important;
+  max-width: 460px !important;
+  max-height: 90vh !important;
+  overflow-y: auto !important;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2) !important;
 }
 
 .modal h2 {
-  font-family: "Cormorant Garamond", serif;
-  font-size: 1.6rem;
-  color: #1a1410;
-  margin-bottom: 1.5rem;
+  font-family: "Cormorant Garamond", serif !important;
+  font-size: 1.6rem !important;
+  color: #1a1410 !important;
+  margin-bottom: 1.5rem !important;
 }
 
-.modal-sm { max-width: 380px; text-align: center; }
-.modal-sm p { color: #666; margin-top: 0.4rem; font-size: 0.9rem; }
-.delete-icon { font-size: 2.5rem; }
+.modal-sm { max-width: 380px !important; text-align: center !important; }
+.modal-sm p { color: #666 !important; margin-top: 0.4rem !important; font-size: 0.9rem !important; }
+.delete-icon { font-size: 2.5rem !important; }
 
-.form-group { margin-bottom: 1.2rem; }
+.form-group { margin-bottom: 1.2rem !important; }
 
 .form-group label {
-  display: block;
-  font-size: 0.73rem;
-  font-weight: 600;
-  color: #6b4c2a;
-  margin-bottom: 6px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  display: block !important;
+  font-size: 0.73rem !important;
+  font-weight: 600 !important;
+  color: #6b4c2a !important;
+  margin-bottom: 6px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
 }
 
 .form-group input,
 .form-group select,
 .form-group textarea {
-  width: 100%;
-  padding: 10px 14px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  font-family: "Montserrat", sans-serif;
-  color: #1a1410;
-  background: white;
-  box-sizing: border-box;
+  width: 100% !important;
+  padding: 10px 14px !important;
+  border: 1px solid #ddd !important;
+  border-radius: 6px !important;
+  font-size: 0.9rem !important;
+  font-family: "Montserrat", sans-serif !important;
+  color: #1a1410 !important;
+  background: white !important;
 }
 
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
-  outline: none;
-  border-color: #c9963a;
-  box-shadow: 0 0 0 3px rgba(201,150,58,0.1);
+  outline: none !important;
+  border-color: #c9963a !important;
+  box-shadow: 0 0 0 3px rgba(201,150,58,0.1) !important;
 }
 
-.form-group textarea { resize: vertical; }
-.input-disabled { background: #f5f5f5; color: #999; cursor: not-allowed; }
+.form-group textarea { resize: vertical !important; }
+.input-disabled { background: #f5f5f5 !important; color: #999 !important; cursor: not-allowed !important; }
 
 .modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 1.8rem;
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+  margin-top: 1.8rem !important;
 }
 
 .btn-cancel {
-  background: #f5f0e8;
-  padding: 10px 20px;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  font-family: "Montserrat", sans-serif;
-  font-size: 0.88rem;
-  color: #555;
+  all: unset !important;
+  box-sizing: border-box !important;
+  background: #f5f0e8 !important;
+  padding: 10px 20px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  font-family: "Montserrat", sans-serif !important;
+  font-size: 0.88rem !important;
+  color: #555 !important;
 }
-.btn-cancel:hover { background: #ede8df; }
+.btn-cancel:hover { background: #ede8df !important; }
 
 .btn-save {
-  background: #c9963a;
-  color: white;
-  padding: 10px 22px;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  font-family: "Montserrat", sans-serif;
-  font-weight: 600;
-  font-size: 0.88rem;
+  all: unset !important;
+  box-sizing: border-box !important;
+  background: #c9963a !important;
+  color: white !important;
+  padding: 10px 22px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  font-family: "Montserrat", sans-serif !important;
+  font-weight: 600 !important;
+  font-size: 0.88rem !important;
 }
-.btn-save:hover { background: #b8852e; }
+.btn-save:hover { background: #b8852e !important; }
 
 .btn-delete-confirm {
-  background: #d32f2f;
-  color: white;
-  padding: 10px 22px;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  font-family: "Montserrat", sans-serif;
-  font-weight: 600;
-  font-size: 0.88rem;
+  all: unset !important;
+  box-sizing: border-box !important;
+  background: #d32f2f !important;
+  color: white !important;
+  padding: 10px 22px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  font-family: "Montserrat", sans-serif !important;
+  font-weight: 600 !important;
+  font-size: 0.88rem !important;
 }
-.btn-delete-confirm:hover { background: #b71c1c; }
+.btn-delete-confirm:hover { background: #b71c1c !important; }
 
 /* ── TOAST ── */
 .toast {
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;
-  padding: 14px 24px;
-  border-radius: 8px;
-  font-family: "Montserrat", sans-serif;
-  font-size: 0.9rem;
-  font-weight: 600;
-  z-index: 99999;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-  animation: slideIn 0.3s ease;
+  position: fixed !important;
+  bottom: 2rem !important;
+  right: 2rem !important;
+  padding: 14px 24px !important;
+  border-radius: 8px !important;
+  font-family: "Montserrat", sans-serif !important;
+  font-size: 0.9rem !important;
+  font-weight: 600 !important;
+  z-index: 99999 !important;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15) !important;
+  animation: slideIn 0.3s ease !important;
 }
-.toast.success { background: #2e7d32; color: white; }
-.toast.error   { background: #c62828; color: white; }
+.toast.success { background: #2e7d32 !important; color: white !important; }
+.toast.error   { background: #c62828 !important; color: white !important; }
 
 @keyframes slideIn {
   from { opacity: 0; transform: translateY(20px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+/* ── IMAGEN PRODUCTO (tabla) ── */
+.td-img { width: 60px !important; padding: 6px 10px !important; }
+.thumb { width: 48px !important; height: 48px !important; object-fit: cover !important; border-radius: 6px !important; border: 1px solid #e8e3dc !important; }
+.no-img { font-size: 0.78rem !important; color: #bbb !important; }
 
-@media (max-width: 768px) {
-  .admin-container { flex-direction: column; }
-  .admin-sidebar {
-    width: 100%;
-    height: auto;
-    position: static;
-    flex-direction: row;
-    padding: 0.5rem;
-    overflow-x: auto;
-  }
-  .sidebar-nav { flex-direction: row; gap: 0; }
-  .sidebar-nav button { padding: 10px 16px; border-left: none; border-bottom: 3px solid transparent; white-space: nowrap; }
-  .sidebar-nav button.active { border-left-color: transparent; border-bottom-color: #c9963a; }
-  .admin-main { padding: 1.5rem; }
-}
+/* ── UPLOAD AREA ── */
+.img-upload-area { display: flex !important; flex-direction: column !important; align-items: flex-start !important; gap: 10px !important; }
+.img-preview { width: 100% !important; max-height: 180px !important; object-fit: cover !important; border-radius: 8px !important; border: 1px solid #ddd !important; }
+.img-placeholder { width: 100% !important; height: 100px !important; background: #f8f6f3 !important; border: 2px dashed #d9cec3 !important; border-radius: 8px !important; display: flex !important; align-items: center !important; justify-content: center !important; font-size: 0.85rem !important; color: #a89880 !important; }
+.file-input { display: none !important; }
+.btn-upload { all: unset !important; box-sizing: border-box !important; background: #f0ebe4 !important; border: 1px solid #d9cec3 !important; color: #5a5040 !important; padding: 8px 16px !important; border-radius: 6px !important; cursor: pointer !important; font-family: "Montserrat", sans-serif !important; font-size: 0.82rem !important; font-weight: 600 !important; transition: background 0.2s !important; }
+.btn-upload:hover:not(:disabled) { background: #e4dcd2 !important; }
+.btn-upload:disabled { opacity: 0.6 !important; cursor: not-allowed !important; }
+.btn-remove-img { all: unset !important; box-sizing: border-box !important; color: #d32f2f !important; font-size: 0.78rem !important; cursor: pointer !important; font-family: "Montserrat", sans-serif !important; font-weight: 600 !important; }
+.btn-remove-img:hover { text-decoration: underline !important; }
+
 </style>
