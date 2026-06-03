@@ -1,7 +1,9 @@
 <template>
-  <div class="admin-container">
+  <div class="admin-page">
+    <Cabecera />
+
+    <div class="admin-container">
     <aside class="admin-sidebar">
-      <div class="sidebar-logo">La <span>Brasa</span></div>
       <nav class="sidebar-nav">
         <button :class="{ active: currentTab === 'usuarios' }" @click="currentTab = 'usuarios'">👤 Usuarios</button>
         <button :class="{ active: currentTab === 'productos' }" @click="currentTab = 'productos'">🍽️ Productos</button>
@@ -43,7 +45,7 @@
               <td>{{ u.nombre }}</td>
               <td>{{ u.apellido }}</td>
               <td>{{ u.email }}</td>
-              <td><span class="badge" :class="u.rol">{{ u.rol }}</span></td>
+              <td><span class="badge" :class="u.rolVisual">{{ u.rolVisual }}</span></td>
               <td class="actions">
                 <button class="btn-edit" @click="openEditUsuario(u)">✏️ Editar</button>
                 <button class="btn-delete" @click="confirmDelete('usuario', u.idUsuario)">🗑️ Eliminar</button>
@@ -129,9 +131,9 @@
               <td>{{ r.idReserva }}</td>
               <td>Mesa {{ r.idMesa }}</td>
               <td>{{ r.fecha }}</td>
-              <td>{{ r.hora }}</td>
+              <td>{{ formatHora(r.hora) }}</td>
               <td>{{ r.numPersonas }}</td>
-              <td>{{ r.fianza }}€</td>
+              <td>{{ formatFianza(r.fianza, r.numPersonas) }}</td>
               <td><span class="badge" :class="r.estadoPago === 'pagado' ? 'disponible' : 'nodisponible'">{{ r.estadoPago }}</span></td>
               <td class="actions">
                 <button class="btn-edit" @click="openEditReserva(r)">✏️ Editar</button>
@@ -143,6 +145,7 @@
         </div>
       </div>
     </main>
+    </div>
 
     <!-- ═══════════════════════════════════
          MODAL EDITAR / CREAR USUARIO
@@ -241,7 +244,11 @@
         </div>
         <div class="form-group">
           <label>Ubicación</label>
-          <input v-model="editingMesa.ubicacion" type="text" placeholder="Ej: Terraza, Ventana..." />
+          <select v-model="editingMesa.ubicacion">
+            <option v-for="ubicacion in ubicacionesMesa" :key="ubicacion" :value="ubicacion">
+              {{ ubicacion }}
+            </option>
+          </select>
         </div>
         <div class="form-group">
           <label>Estado</label>
@@ -288,7 +295,7 @@
           <select v-model="editingReserva.estadoPago">
             <option value="pendiente">Pendiente</option>
             <option value="pagado">Pagado</option>
-            <option value="cancelado">Cancelado</option>
+            <option value="reembolsado">Reembolsado</option>
           </select>
         </div>
         <div class="modal-actions">
@@ -315,6 +322,8 @@
 
     <!-- TOAST NOTIFICACIÓN -->
     <div v-if="toast.show" :class="['toast', toast.type]">{{ toast.msg }}</div>
+
+    <Footer />
   </div>
 </template>
 
@@ -323,9 +332,12 @@ import { ref, watch } from "vue";
 import { getAuth, signOut } from "firebase/auth";
 import { useRouter } from "vue-router";
 import { createClient } from "@supabase/supabase-js";
+import Cabecera from "./Cabecera.vue";
+import Footer from "./Footer.vue";
 
 const API = "/api";
-const categoriasProducto = ["Todo", "Entrantes", "Carnes", "Pescados", "Postres", "Bebidas"];
+const categoriasProducto = ["Entrantes", "Carnes", "Pescados", "Postres", "Bebidas"];
+const ubicacionesMesa = ["Interior", "Terraza"];
 const formatearPrecioParaApi = (precio) => Number(precio).toFixed(2).replace(".", ",");
 const productoSoportaImagenUrl = ref(false);
 
@@ -404,10 +416,68 @@ const showToast = (msg, type = "success") => {
 };
 
 // ─── CARGA DE DATOS ───────────────────────────────────
+const fetchApiList = async (entity, filter = "") => {
+  const url = filter
+      ? `${API}/${entity}?$filter=${encodeURIComponent(filter)}`
+      : `${API}/${entity}`;
+  const res = await fetch(url);
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.value || data || [];
+};
+
+const normalizarFianza = (fianza, personas) => {
+  const importe = Number(fianza);
+  if (!Number.isFinite(importe)) return 0;
+
+  const importeEsperado = Number(personas || 0) * 2.5;
+  if (importeEsperado && Math.abs(importe / 10 - importeEsperado) < 0.01) {
+    return importe / 10;
+  }
+
+  return importe;
+};
+
+const formatFianza = (fianza, personas) =>
+    `${normalizarFianza(fianza, personas).toLocaleString("es-ES", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })} €`;
+
+const formatHora = (hora) => String(hora || "").substring(0, 5);
+
+const cargarUsuariosConRolVisual = async () => {
+  const [usuariosData, administradoresData] = await Promise.all([
+    fetch(`${API}/Usuario`).then((res) => {
+      if (!res.ok) throw new Error();
+      return res.json();
+    }),
+    fetch(`${API}/Administrador`).then((res) =>
+        res.ok ? res.json() : { value: [] },
+    ),
+  ]);
+
+  const administradoresIds = new Set(
+      (administradoresData.value || administradoresData || []).map((a) =>
+          Number(a.idUsuario),
+      ),
+  );
+
+  usuarios.value = (usuariosData.value || usuariosData || []).map((u) => ({
+    ...u,
+    rolVisual: administradoresIds.has(Number(u.idUsuario)) ? "admin" : u.rol,
+  }));
+};
+
 const refresh = async () => {
   loading.value = true;
   error.value = "";
   try {
+    if (currentTab.value === "usuarios") {
+      await cargarUsuariosConRolVisual();
+      return;
+    }
+
     const endpoint = currentTab.value === 'usuarios'  ? 'Usuario'  :
         currentTab.value === 'productos' ? 'Producto' :
             currentTab.value === 'reservas'  ? 'Reserva'  : 'Mesa';
@@ -417,7 +487,6 @@ const refresh = async () => {
     const data = await res.json();
     const registros = data.value || data;
 
-    if (currentTab.value === 'usuarios')  usuarios.value  = registros;
     if (currentTab.value === 'productos') {
       productos.value = registros;
       productoSoportaImagenUrl.value = registros.some((producto) =>
@@ -437,37 +506,43 @@ watch(currentTab, refresh, { immediate: true });
 
 // ─── USUARIOS ─────────────────────────────────────────
 const openEditUsuario = (u) => {
-  editingUsuario.value = { ...u };
+  editingUsuario.value = { ...u, rol: u.rolVisual || u.rol };
   modalUsuario.value = true;
 };
 
 const saveUsuario = async () => {
   const { idUsuario, nombre, apellido, rol } = editingUsuario.value;
+  const rolUsuario = rol === "admin" ? "empleado" : rol;
+
   try {
     const res = await fetch(`${API}/Usuario/idUsuario/${idUsuario}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nombre, apellido, rol })
+      body: JSON.stringify({ nombre, apellido, rol: rolUsuario })
     });
-    if (!res.ok) throw new Error();
+    if (!res.ok) throw new Error(await res.text());
+
+    await syncUsuarioRol(idUsuario, rol);
+
     modalUsuario.value = false;
     showToast("Usuario actualizado correctamente.");
     refresh();
-  } catch {
+  } catch (e) {
+    console.error("Error actualizando usuario:", e);
     showToast("Error al actualizar el usuario.", "error");
   }
 };
 
 // ─── PRODUCTOS ────────────────────────────────────────
 const openAddProducto = () => {
-  editingProducto.value = { nombre: "", precio: "", categoria: "Todo", descripcion: "", disponible: true, imagen_url: "" };
+  editingProducto.value = { nombre: "", precio: "", categoria: "Entrantes", descripcion: "", disponible: true, imagen_url: "" };
   modalProducto.value = true;
 };
 
 const openEditProducto = (p) => {
   editingProducto.value = {
     ...p,
-    categoria: categoriasProducto.includes(p.categoria) ? p.categoria : "Todo",
+    categoria: categoriasProducto.includes(p.categoria) ? p.categoria : "Entrantes",
   };
   modalProducto.value = true;
 };
@@ -519,7 +594,7 @@ const saveProducto = async () => {
 
 // ─── MESAS ────────────────────────────────────────────
 const openAddMesa = () => {
-  editingMesa.value = { capacidad: 2, ubicacion: "", disponible: true };
+  editingMesa.value = { capacidad: 2, ubicacion: "Interior", disponible: true };
   modalMesa.value = true;
 };
 
@@ -591,6 +666,80 @@ const saveReserva = async () => {
 };
 
 // ─── ELIMINAR ─────────────────────────────────────────
+const postApi = async (url, body, { ignoreConflict = false } = {}) => {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (ignoreConflict && (res.status === 409 || res.status === 400)) return;
+  if (!res.ok) {
+    const msg = await res.text().catch(() => "");
+    throw new Error(msg || `Error ${res.status} al crear ${url}`);
+  }
+};
+
+const deleteApi = async (url, { ignoreNotFound = false } = {}) => {
+  const res = await fetch(url, { method: "DELETE" });
+  if (ignoreNotFound && (res.status === 404 || res.status === 400)) return;
+  if (!res.ok) {
+    const msg = await res.text().catch(() => "");
+    throw new Error(msg || `Error ${res.status} al eliminar ${url}`);
+  }
+};
+
+const ensureEmpleado = async (idUsuario, puesto = "mesero") => {
+  const id = Number(idUsuario);
+  const empleado = await fetchApiList("Empleado", `idUsuario eq ${id}`);
+
+  if (empleado.length) {
+    await fetch(`${API}/Empleado/idUsuario/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ puesto }),
+    });
+    return;
+  }
+
+  await postApi(`${API}/Empleado`, { idUsuario: id, puesto }, { ignoreConflict: true });
+};
+
+const ensureAdministrador = async (idUsuario) => {
+  const id = Number(idUsuario);
+  const administrador = await fetchApiList("Administrador", `idUsuario eq ${id}`);
+
+  if (!administrador.length) {
+    await postApi(`${API}/Administrador`, { idUsuario: id }, { ignoreConflict: true });
+  }
+};
+
+const syncUsuarioRol = async (idUsuario, rolVisual) => {
+  const id = Number(idUsuario);
+
+  if (rolVisual === "admin") {
+    await ensureEmpleado(id, "administrador");
+    await ensureAdministrador(id);
+    return;
+  }
+
+  if (rolVisual === "empleado") {
+    await deleteApi(`${API}/Administrador/idUsuario/${id}`, { ignoreNotFound: true });
+    await ensureEmpleado(id, "mesero");
+    return;
+  }
+
+  if (rolVisual === "cliente") {
+    await deleteApi(`${API}/Administrador/idUsuario/${id}`, { ignoreNotFound: true });
+    await deleteApi(`${API}/Empleado/idUsuario/${id}`, { ignoreNotFound: true });
+
+    const cliente = await fetchApiList("Cliente", `idUsuario eq ${id}`);
+    if (!cliente.length) {
+      await postApi(`${API}/Cliente`, { idUsuario: id }, { ignoreConflict: true });
+    }
+  }
+};
+
 const confirmDelete = (type, id) => {
   deleteConfirm.value = { show: true, type, id };
 };
@@ -625,6 +774,15 @@ const handleLogout = () => {
 @import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Montserrat:wght@400;600&display=swap");
 
 /* ── RESET TOTAL SCOPED ── */
+.admin-page {
+  min-height: 100vh;
+  background: #fdfbf9;
+}
+
+.admin-page :deep(nav) {
+  background: #1a1410 !important;
+}
+
 .admin-container { all: initial; }
 
 .admin-container,
@@ -637,13 +795,12 @@ const handleLogout = () => {
 .admin-container {
   display: flex !important;
   flex-direction: row !important;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
+  width: 100%;
+  min-height: calc(100vh - 72px);
+  margin-top: 72px;
+  overflow: visible;
   background: #fdfbf9;
-  position: fixed;
-  top: 0;
-  left: 0;
+  position: relative;
   z-index: 1;
 }
 
@@ -653,28 +810,31 @@ const handleLogout = () => {
   min-width: 240px !important;
   max-width: 240px !important;
   flex-shrink: 0 !important;
-  height: 100vh !important;
+  height: calc(100vh - 72px) !important;
   background: #1a1410 !important;
   color: #f5f0e8 !important;
   display: flex !important;
   flex-direction: column !important;
   align-items: stretch !important;
   justify-content: flex-start !important;
-  padding: 2rem 1rem !important;
-  position: relative !important;
+  padding: 1.5rem 1rem !important;
+  position: sticky !important;
+  top: 72px !important;
   z-index: 10 !important;
   overflow: hidden !important;
 }
 
 .sidebar-logo {
   font-family: "Cormorant Garamond", serif !important;
-  font-size: 1.8rem !important;
+  font-size: 1.7rem !important;
+  font-weight: 600 !important;
   text-align: center !important;
   color: #f5f0e8 !important;
-  letter-spacing: 1px !important;
-  padding-bottom: 1.5rem !important;
+  letter-spacing: 0.06em !important;
+  text-decoration: none !important;
+  padding-bottom: 1.2rem !important;
   margin-bottom: 1rem !important;
-  border-bottom: 1px solid rgba(255,255,255,0.1) !important;
+  border-bottom: none !important;
   display: block !important;
   width: 100% !important;
   position: static !important;
@@ -682,7 +842,10 @@ const handleLogout = () => {
   flex-shrink: 0 !important;
   line-height: 1.3 !important;
 }
-.sidebar-logo span { color: #c9963a !important; }
+.sidebar-logo span {
+  color: #c9963a !important;
+  font-style: italic !important;
+}
 
 /* ── NAV (ACTUALIZADO) ── */
 .sidebar-nav {
@@ -729,8 +892,8 @@ const handleLogout = () => {
 /* ── LOGOUT ── */
 .btn-logout {
   all: unset !important;
+  display: none !important;
   box-sizing: border-box !important;
-  display: block !important;
   width: 100% !important;
   flex-shrink: 0 !important;
   background: transparent !important;
@@ -755,8 +918,8 @@ const handleLogout = () => {
 .admin-main {
   flex: 1 !important;
   min-width: 0 !important;
-  height: 100vh !important;
-  overflow-y: auto !important;
+  min-height: calc(100vh - 72px) !important;
+  overflow: visible !important;
   padding: 2.5rem 3rem !important;
   background: #fdfbf9 !important;
   display: block !important;
