@@ -584,7 +584,12 @@ export default {
             disponible:
                 !!m.disponible &&
                 !mesasOcupadasIds.includes(m.idMesa),
-          }));
+          }))
+
+          .sort((a, b) =>
+              Number(a.capacidad) - Number(b.capacidad) ||
+              Number(a.idMesa) - Number(b.idMesa)
+          );
     },
 
     mesasLibres() {
