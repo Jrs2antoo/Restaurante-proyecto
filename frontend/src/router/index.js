@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { apiUrl } from "@/config/api";
 import HomePage from "@/components/HomePage.vue";
 import CatalogoPage from "@/components/CatalogoPage.vue";
 import LoginPage from "@/components/LoginPage.vue";
@@ -60,8 +61,8 @@ const esperarUsuario = () => {
 
 const fetchApiList = async (entity, filter = "") => {
     const url = filter
-        ? `/api/${entity}?$filter=${encodeURIComponent(filter)}`
-        : `/api/${entity}`;
+        ? apiUrl(`${entity}?$filter=${encodeURIComponent(filter)}`)
+        : apiUrl(entity);
     const res = await fetch(url);
     if (!res.ok) return [];
     const data = await res.json();

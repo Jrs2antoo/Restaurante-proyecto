@@ -334,8 +334,8 @@ import { useRouter } from "vue-router";
 import { createClient } from "@supabase/supabase-js";
 import Cabecera from "./Cabecera.vue";
 import Footer from "./Footer.vue";
+import { API_BASE_URL as API } from "@/config/api";
 
-const API = "/api";
 const categoriasProducto = ["Entrantes", "Carnes", "Pescados", "Postres", "Bebidas"];
 const ubicacionesMesa = ["Interior", "Terraza"];
 const formatearPrecioParaApi = (precio) => Number(precio).toFixed(2).replace(".", ",");

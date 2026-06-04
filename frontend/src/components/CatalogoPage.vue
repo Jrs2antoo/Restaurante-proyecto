@@ -1,8 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import Cabecera from "./Cabecera.vue";
-
-const API = "/api";
+import { API_BASE_URL as API } from "@/config/api";
 
 const categoriaActiva = ref("Todo");
 const busqueda = ref("");

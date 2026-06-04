@@ -413,8 +413,7 @@
 import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
 import Cabecera from "./Cabecera.vue";
 import Footer from "./Footer.vue";
-
-const DAB = "/api";
+import { API_BASE_URL as DAB } from "@/config/api";
 
 export default {
   name: "MisReservasPage",

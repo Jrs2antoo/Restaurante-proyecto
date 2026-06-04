@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
+import { apiUrl } from "@/config/api";
 
 const router = useRouter();
 const route = useRoute();
@@ -44,8 +45,8 @@ const handleScroll = () => {
 
 const fetchApiList = async (entity, filter = "") => {
   const url = filter
-    ? `/api/${entity}?$filter=${encodeURIComponent(filter)}`
-    : `/api/${entity}`;
+    ? apiUrl(`${entity}?$filter=${encodeURIComponent(filter)}`)
+    : apiUrl(entity);
   const res = await fetch(url);
   if (!res.ok) return [];
   const data = await res.json();

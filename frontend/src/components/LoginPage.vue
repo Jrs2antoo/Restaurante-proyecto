@@ -2,6 +2,7 @@
 import { Icon } from '@iconify/vue'
 import { ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
+import { apiUrl } from '@/config/api'
 import {
   getAuth,
   signInWithEmailAndPassword,
@@ -31,7 +32,7 @@ async function saveUserToDb(nombre, userEmail, passwordHash = 'firebase-auth') {
       contraseña: passwordHash,
       rol: 'cliente'
     }
-    const res = await fetch('/api/Usuario', {
+    const res = await fetch(apiUrl('/Usuario'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),

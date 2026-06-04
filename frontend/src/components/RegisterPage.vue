@@ -104,6 +104,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { apiUrl } from '@/config/api'
 import {
   getAuth,
   createUserWithEmailAndPassword,
@@ -139,7 +140,7 @@ async function saveUserToDb(nombre, email, passwordHash = 'firebase-auth') {
       contraseña: passwordHash,
       rol: 'cliente'
     }
-    const res = await fetch('/api/Usuario', {
+    const res = await fetch(apiUrl('/Usuario'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
