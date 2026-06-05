@@ -82,7 +82,7 @@ const comprobarAdmin = async (user) => {
 const cerrarSesion = async () => {
   menuAbierto.value = false;
   await signOut(auth);
-  router.push("/login");
+  router.push("/");
 };
 
 onMounted(() => {
