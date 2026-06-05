@@ -218,18 +218,21 @@ body {
 .hero-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    160deg,
-    rgba(26, 20, 16, 0.72) 0%,
-    rgba(26, 20, 16, 0.45) 60%,
-    rgba(107, 76, 42, 0.3) 100%
-  );
+  background:
+    radial-gradient(circle at 50% 42%, rgba(26, 20, 16, 0.18) 0%, rgba(26, 20, 16, 0.62) 58%),
+    linear-gradient(
+      160deg,
+      rgba(12, 9, 7, 0.84) 0%,
+      rgba(26, 20, 16, 0.56) 54%,
+      rgba(12, 9, 7, 0.78) 100%
+    );
 }
 .hero-content {
   position: relative;
   text-align: center;
   color: var(--cream);
   padding: 96px 1.5rem 0;
+  max-width: 760px;
   animation: fadeUp 1.1s ease both;
 }
 @keyframes fadeUp {
@@ -246,10 +249,11 @@ body {
   font-size: 0.68rem;
   letter-spacing: 0.3em;
   text-transform: uppercase;
-  color: var(--gold);
+  color: #f4c45c;
   margin-bottom: 1rem;
   font-family: "Montserrat", sans-serif;
   font-weight: 500;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.7);
   animation: fadeUp 1.1s 0.15s ease both;
 }
 .hero-title {
@@ -258,21 +262,23 @@ body {
   font-weight: 300;
   line-height: 1;
   margin-bottom: 1.2rem;
+  text-shadow: 0 4px 30px rgba(0, 0, 0, 0.78);
   animation: fadeUp 1.1s 0.3s ease both;
 }
 .hero-title em {
   display: block;
   font-style: italic;
-  color: var(--gold);
+  color: #f2bd52;
 }
 .hero-sub {
-  font-size: 0.9rem;
-  font-weight: 300;
-  letter-spacing: 0.08em;
-  opacity: 0.82;
-  max-width: 460px;
+  font-size: 0.98rem;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  opacity: 0.96;
+  max-width: 520px;
   margin: 0 auto 2.6rem;
   line-height: 1.8;
+  text-shadow: 0 3px 18px rgba(0, 0, 0, 0.82);
   animation: fadeUp 1.1s 0.45s ease both;
 }
 .hero-cta {
@@ -408,16 +414,7 @@ section {
   border: 1px solid rgba(201, 150, 58, 0.2);
   border-radius: 4px;
   padding: 2rem 1.6rem;
-  transition:
-    border-color 0.3s,
-    background 0.3s,
-    transform 0.3s;
   cursor: default;
-}
-.why-card:hover {
-  border-color: var(--gold);
-  background: rgba(201, 150, 58, 0.07);
-  transform: translateY(-3px);
 }
 .why-card-icon {
   font-size: 1.9rem;

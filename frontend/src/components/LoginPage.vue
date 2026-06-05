@@ -1,7 +1,7 @@
 <script setup>
 import { Icon } from '@iconify/vue'
 import { ref } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { apiUrl } from '@/config/api'
 import {
   getAuth,
@@ -16,7 +16,13 @@ const email = ref('')
 const password = ref('')
 const error = ref('')
 const router = useRouter()
+const route = useRoute()
 const auth = getAuth()
+
+const destinoTrasLogin = () => {
+  const redirect = route.query.redirect
+  return typeof redirect === 'string' && redirect.startsWith('/') ? redirect : '/'
+}
 
 // ── Guarda el usuario en MySQL vía DAB (ignora duplicados) ──
 async function saveUserToDb(nombre, userEmail, passwordHash = 'firebase-auth') {
@@ -56,7 +62,7 @@ async function login() {
   error.value = ''
   try {
     await signInWithEmailAndPassword(auth, email.value, password.value)
-    router.push('/')
+    router.push(destinoTrasLogin())
   } catch (e) {
     console.error('login error:', e.code, e.message)
     error.value = 'Email o contraseña incorrectos'
@@ -71,13 +77,13 @@ async function loginSocial(ProviderClass) {
 
     if (!user.email) {
       console.warn('El proveedor no devolvió email; no se guarda en BD')
-      router.push('/')
+      router.push(destinoTrasLogin())
       return
     }
 
     // Intenta insertar — si ya existe (409), el servidor lo ignora
     await saveUserToDb(user.displayName || '', user.email, user.uid)
-    router.push('/')
+    router.push(destinoTrasLogin())
   } catch (e) {
     console.error('loginSocial error:', e.code, e.message)
     if (e.code !== 'auth/popup-closed-by-user') {
@@ -152,7 +158,7 @@ const loginTwitter  = () => loginSocial(TwitterAuthProvider)
       <button class="submit-btn" @click="login">Entrar a laBrasa</button>
       <!-- Register footer -->
       <div class="register-footer">
-        ¿No tienes cuenta? <RouterLink to="/register">Regístrate aquí</RouterLink>
+        ¿No tienes cuenta? <RouterLink :to="{ path: '/register', query: route.query.redirect ? { redirect: route.query.redirect } : {} }">Regístrate aquí</RouterLink>
       </div>
 
     </div>

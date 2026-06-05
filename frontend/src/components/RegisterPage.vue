@@ -94,7 +94,7 @@
 
       <!-- Login footer -->
       <div class="register-footer">
-        ¿Ya tienes cuenta? <RouterLink to="/login">Inicia sesión</RouterLink>
+        ¿Ya tienes cuenta? <RouterLink :to="{ path: '/login', query: route.query.redirect ? { redirect: route.query.redirect } : {} }">Inicia sesión</RouterLink>
       </div>
 
     </div>
@@ -103,7 +103,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { apiUrl } from '@/config/api'
 import {
   getAuth,
@@ -116,6 +116,7 @@ import {
 } from 'firebase/auth'
 
 const router = useRouter()
+const route = useRoute()
 const auth = getAuth()
 
 const loading = ref(false)
@@ -124,6 +125,11 @@ const successMsg = ref('')
 const showPass = ref(false)
 
 const form = ref({ nombre: '', email: '', password: '', confirm: '' })
+
+const destinoTrasRegistro = () => {
+  const redirect = route.query.redirect
+  return typeof redirect === 'string' && redirect.startsWith('/') ? redirect : '/'
+}
 
 // ── Guarda el usuario en MySQL vía DAB ──
 async function saveUserToDb(nombre, email, passwordHash = 'firebase-auth') {
@@ -200,7 +206,7 @@ async function handleRegister() {
     await updateProfile(user, { displayName: form.value.nombre.trim() })
     await saveUserToDb(form.value.nombre.trim(), form.value.email.trim(), user.uid)
     successMsg.value = '¡Cuenta creada! Redirigiendo...'
-    setTimeout(() => router.push('/'), 1400)
+    setTimeout(() => router.push(destinoTrasRegistro()), 1400)
   } catch (err) {
     console.error('handleRegister error:', err.code, err.message)
     errorMsg.value = firebaseError(err.code)
@@ -217,12 +223,12 @@ async function handleSocial(ProviderClass) {
 
     if (!user.email) {
       console.warn('El proveedor no devolvió email; no se guarda en BD')
-      router.push('/')
+      router.push(destinoTrasRegistro())
       return
     }
 
     await saveUserToDb(user.displayName || '', user.email, user.uid)
-    router.push('/')
+    router.push(destinoTrasRegistro())
   } catch (err) {
     console.error('handleSocial error:', err.code, err.message)
     if (err.code !== 'auth/popup-closed-by-user') {

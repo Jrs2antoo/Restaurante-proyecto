@@ -30,7 +30,7 @@ const router = createRouter({
         {
             path: "/catalogo",
             component: CatalogoPage,
-            meta: { requireAuth: true, onlyAdmin: false },
+            meta: { requireAuth: false, onlyAdmin: false },
         },
         {
             path: "/administracion",
@@ -94,7 +94,7 @@ router.beforeEach(async (to) => {
 
     // Ruta protegida sin estar logueado
     if (to.meta.requireAuth && !usuarioLogueado) {
-        return "/login";
+        return { path: "/login", query: { redirect: to.fullPath } };
     }
 
     // Usuario no es admin intentando entrar a ruta de admin
@@ -102,9 +102,9 @@ router.beforeEach(async (to) => {
         return "/";
     }
 
-    // Ya logueado intentando entrar a login/register
-    if (!to.meta.requireAuth && usuarioLogueado && to.path !== "/") {
-        return "/";
+    if ((to.path === "/login" || to.path === "/register") && usuarioLogueado) {
+        const redirect = typeof to.query.redirect === "string" ? to.query.redirect : "/";
+        return redirect.startsWith("/") ? redirect : "/";
     }
 });
 

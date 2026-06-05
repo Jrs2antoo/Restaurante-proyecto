@@ -1002,6 +1002,14 @@ export default {
 
     goStep(n) {
 
+      if (n === 3 && !this.usuarioActual) {
+        this.$router.push({
+          path: "/login",
+          query: { redirect: this.$route.fullPath },
+        });
+        return;
+      }
+
       this.currentStep = n;
 
       window.scrollTo({
