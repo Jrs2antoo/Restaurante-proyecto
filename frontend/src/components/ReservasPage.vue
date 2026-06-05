@@ -158,7 +158,7 @@
               <button
                 class="btn-primary"
                 :disabled="!canGoStep2"
-                @click="goStep(2)"
+                @click="continuarADatos"
               >
                 Continuar <span>→</span>
               </button>
@@ -431,6 +431,8 @@ import Cabecera from "./Cabecera.vue";
 import Footer from "./Footer.vue";
 import { API_BASE_URL as DAB } from "@/config/api";
 
+const RESERVA_DRAFT_KEY = "laBrasaReservaPendiente";
+
 export default {
   name: "ReservasPage",
   components: { Cabecera, Footer },
@@ -440,6 +442,7 @@ export default {
 
     return {
       usuarioActual: null,
+      restaurandoReservaPendiente: false,
 
       currentStep: 1,
       steps: ["Disponibilidad", "Tus datos", "Pago"],
@@ -696,16 +699,20 @@ export default {
 
       if (!nuevaFecha) return;
 
-      this.mesaSeleccionada = null;
+      if (!this.restaurandoReservaPendiente) {
+        this.mesaSeleccionada = null;
+      }
 
       await this.cargarReservasDelDia();
     },
 
     ubicacion() {
+      if (this.restaurandoReservaPendiente) return;
       this.mesaSeleccionada = null;
     },
 
     personas() {
+      if (this.restaurandoReservaPendiente) return;
 
       const mesa = this.mesasDisponibles.find(
           m => m.idMesa === this.mesaSeleccionada
@@ -719,11 +726,16 @@ export default {
 
   mounted() {
 
+    if (Number(this.$route.query.step) === 2) {
+      this.restaurarReservaPendiente();
+    }
+
     const auth = getAuth();
 
     onAuthStateChanged(auth, async user => {
       this.usuarioActual = user;
       await this.autocompletarContacto();
+      this.aplicarPasoDesdeQuery();
     });
 
     Promise.all([
@@ -733,6 +745,79 @@ export default {
   },
 
   methods: {
+    aplicarPasoDesdeQuery() {
+      const step = Number(this.$route.query.step);
+
+      if (step !== 2) return;
+
+      if (!this.usuarioActual) {
+        this.$router.replace({
+          path: "/login",
+          query: { redirect: this.$route.fullPath },
+        });
+        return;
+      }
+
+      this.currentStep = this.canGoStep2 ? 2 : 1;
+    },
+
+    guardarReservaPendiente() {
+      if (!this.canGoStep2) return;
+
+      sessionStorage.setItem(
+          RESERVA_DRAFT_KEY,
+          JSON.stringify({
+            fecha: this.fechaISO,
+            mesa: this.mesaSeleccionada,
+            personas: this.personas,
+            ubicacion: this.ubicacion,
+          })
+      );
+    },
+
+    restaurarReservaPendiente() {
+      const raw = sessionStorage.getItem(RESERVA_DRAFT_KEY);
+      if (!raw) return;
+
+      try {
+        this.restaurandoReservaPendiente = true;
+        const draft = JSON.parse(raw);
+
+        if (draft.ubicacion) this.ubicacion = draft.ubicacion;
+        if (draft.personas) this.personas = Number(draft.personas);
+        if (draft.fecha) {
+          const [year, month, day] = String(draft.fecha).split("-").map(Number);
+          this.fechaSeleccionada = new Date(year, month - 1, day);
+          this.mesVista = new Date(year, month - 1, 1);
+        }
+        if (draft.mesa) this.mesaSeleccionada = Number(draft.mesa);
+
+        this.$nextTick(() => {
+          this.restaurandoReservaPendiente = false;
+          this.aplicarPasoDesdeQuery();
+        });
+      } catch (e) {
+        console.error("No se pudo restaurar la reserva pendiente:", e);
+        sessionStorage.removeItem(RESERVA_DRAFT_KEY);
+        this.restaurandoReservaPendiente = false;
+      }
+    },
+
+    continuarADatos() {
+      if (!this.canGoStep2) return;
+
+      if (!this.usuarioActual) {
+        this.guardarReservaPendiente();
+        this.$router.push({
+          path: "/login",
+          query: { redirect: "/reservas?step=2" },
+        });
+        return;
+      }
+
+      this.goStep(2);
+    },
+
     async autocompletarContacto() {
 
       const emailUsuario =
@@ -1001,15 +1086,6 @@ export default {
     },
 
     goStep(n) {
-
-      if (n === 3 && !this.usuarioActual) {
-        this.$router.push({
-          path: "/login",
-          query: { redirect: this.$route.fullPath },
-        });
-        return;
-      }
-
       this.currentStep = n;
 
       window.scrollTo({
@@ -1178,6 +1254,7 @@ export default {
                 .toUpperCase();
 
         this.currentStep = 4;
+        sessionStorage.removeItem(RESERVA_DRAFT_KEY);
 
       } catch (e) {
 
@@ -1331,6 +1408,7 @@ export default {
     nuevaReserva() {
 
       this.currentStep = 1;
+      sessionStorage.removeItem(RESERVA_DRAFT_KEY);
 
       this.fechaSeleccionada = null;
 

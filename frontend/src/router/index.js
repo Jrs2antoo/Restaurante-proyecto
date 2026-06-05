@@ -40,7 +40,7 @@ const router = createRouter({
         {
             path: "/reservas",
             component: ReservasPage,
-            meta: { requireAuth: true, onlyAdmin: false },
+            meta: { requireAuth: false, onlyAdmin: false },
         },
         {
             path: "/mis-reservas",
