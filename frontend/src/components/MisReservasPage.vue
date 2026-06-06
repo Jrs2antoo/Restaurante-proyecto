@@ -52,7 +52,7 @@
           <div class="reservas-info">
             <span class="reservas-info-icon">ℹ</span>
             <p>
-              Las reservas solo se pueden editar hasta 48 horas antes. Si cancelas con 48 horas o más de antelación, la fianza se marcará para devolución; con menos de 48 horas, no será reembolsable.
+              Las reservas solo se pueden editar hasta 48 horas antes. Si cancelas con más de 48 horas de antelación, la fianza se marcará para devolución; con menos de 48 horas, no será reembolsable.
             </p>
           </div>
 
@@ -224,174 +224,296 @@
         <div class="modal-box modal-edicion">
           <button class="modal-close" @click="cerrarEdicion">✕</button>
 
-          <div class="modal-edit-header">
-            <span class="section-label"
-              >Editando reserva #LB{{
-                String(reservaAeditar?.idReserva).slice(-6).toUpperCase()
-              }}</span
-            >
-            <h3 class="modal-title-left">Cambiar fecha,<br /><em>personas y mesa</em></h3>
-          </div>
+          <div v-if="pasoEdit === 1">
+            <div class="modal-edit-header">
+              <span class="section-label"
+                >Editando reserva #LB{{
+                  String(reservaAeditar?.idReserva).slice(-6).toUpperCase()
+                }}</span
+              >
+              <h3 class="modal-title-left">Cambiar fecha,<br /><em>personas y mesa</em></h3>
+            </div>
 
-          <!-- ── FECHA ── -->
-          <div class="edit-seccion">
-            <label class="form-label">Nueva fecha</label>
-            <div class="calendar-wrapper">
-              <div class="calendar-nav">
-                <button class="cal-nav-btn" @click="prevMesEdit">‹</button>
-                <span class="cal-month-title"
-                  >{{ mesEditNombre }} {{ anioEdit }}</span
-                >
-                <button class="cal-nav-btn" @click="nextMesEdit">›</button>
+            <!-- ── FECHA ── -->
+            <div class="edit-seccion">
+              <label class="form-label">Nueva fecha</label>
+              <div class="calendar-wrapper">
+                <div class="calendar-nav">
+                  <button class="cal-nav-btn" @click="prevMesEdit">‹</button>
+                  <span class="cal-month-title"
+                    >{{ mesEditNombre }} {{ anioEdit }}</span
+                  >
+                  <button class="cal-nav-btn" @click="nextMesEdit">›</button>
+                </div>
+                <div class="calendar-grid">
+                  <span v-for="d in diasSemana" :key="d" class="cal-dow">{{
+                    d
+                  }}</span>
+                  <span
+                    v-for="(day, idx) in diasCalendarioEdit"
+                    :key="idx"
+                    class="cal-day"
+                    :class="{
+                      empty: !day,
+                      past: day && isPast(day),
+                      selected: day && isSameDay(day, fechaEditSeleccionada),
+                      today: day && isToday(day),
+                      unavailable:
+                        day && !isPast(day) && !isDayAvailableEdit(day),
+                    }"
+                    @click="
+                      day &&
+                      !isPast(day) &&
+                      isDayAvailableEdit(day) &&
+                      selectFechaEdit(day)
+                    "
+                  >
+                    {{ day ? day.getDate() : "" }}
+                  </span>
+                </div>
+                <div class="calendar-legend">
+                  <span class="legend-item"
+                    ><span class="legend-dot available"></span>Disponible</span
+                  >
+                  <span class="legend-item"
+                    ><span class="legend-dot unavailable"></span>Sin mesas</span
+                  >
+                  <span class="legend-item"
+                    ><span class="legend-dot selected-dot"></span
+                    >Seleccionado</span
+                  >
+                </div>
               </div>
-              <div class="calendar-grid">
-                <span v-for="d in diasSemana" :key="d" class="cal-dow">{{
-                  d
-                }}</span>
-                <span
-                  v-for="(day, idx) in diasCalendarioEdit"
-                  :key="idx"
-                  class="cal-day"
-                  :class="{
-                    empty: !day,
-                    past: day && isPast(day),
-                    selected: day && isSameDay(day, fechaEditSeleccionada),
-                    today: day && isToday(day),
-                    unavailable:
-                      day && !isPast(day) && !isDayAvailableEdit(day),
-                  }"
+            </div>
+
+            <!-- ── MESA ── -->
+            <!-- PERSONAS -->
+            <div class="edit-seccion">
+              <label class="form-label">N&uacute;mero de comensales</label>
+              <div class="personas-selector">
+                <button
+                  class="personas-btn"
+                  :disabled="personasEdit <= personasOriginalEdit"
+                  @click="cambiarPersonasEdit(-1)"
+                >
+                  &minus;
+                </button>
+                <div class="personas-display">
+                  <span class="personas-num">{{ personasEdit }}</span>
+                  <span class="personas-label">{{ personasEdit === 1 ? "persona" : "personas" }}</span>
+                </div>
+                <button
+                  class="personas-btn"
+                  :disabled="personasEdit >= 12"
+                  @click="cambiarPersonasEdit(1)"
+                >
+                  +
+                </button>
+              </div>
+              <p class="form-hint">
+                Puedes aumentar los comensales, pero no reducirlos desde esta pantalla.
+              </p>
+            </div>
+
+            <div class="edit-seccion" v-if="fechaEditSeleccionada">
+              <label class="form-label">&iquest;D&oacute;nde prefieres sentarte?</label>
+              <div class="ubicacion-cards">
+                <button
+                  class="ubicacion-card"
+                  :class="{ selected: ubicacionEdit === 'interior' }"
                   @click="
-                    day &&
-                    !isPast(day) &&
-                    isDayAvailableEdit(day) &&
-                    selectFechaEdit(day)
+                    ubicacionEdit = 'interior';
+                    mesaEditSeleccionada = null;
                   "
                 >
-                  {{ day ? day.getDate() : "" }}
+                  <div class="ubicacion-icon">&#127968;</div>
+                  <h3>Interior</h3>
+                  <p>Ambiente &iacute;ntimo con decoraci&oacute;n andaluza, climatizado todo el a&ntilde;o.</p>
+                  <div class="ubicacion-check">&#10003;</div>
+                </button>
+                <button
+                  class="ubicacion-card"
+                  :class="{ selected: ubicacionEdit === 'terraza' }"
+                  @click="
+                    ubicacionEdit = 'terraza';
+                    mesaEditSeleccionada = null;
+                  "
+                >
+                  <div class="ubicacion-icon">&#127807;</div>
+                  <h3>Terraza exterior</h3>
+                  <p>Bajo el cielo de Granada. Disponible seg&uacute;n condiciones meteorol&oacute;gicas.</p>
+                  <div class="ubicacion-check">&#10003;</div>
+                </button>
+              </div>
+
+              <label class="form-label">Selecciona mesa</label>
+              <div class="disponibilidad-info">
+                <div class="disp-badge" :class="disponibilidadEdit.clase">
+                  <span class="disp-dot"></span>
+                  {{ disponibilidadEdit.texto }}
+                </div>
+              </div>
+              <div class="mesas-grid">
+                <button
+                  v-for="mesa in mesasDisponiblesEdit"
+                  :key="mesa.idMesa"
+                  class="mesa-card"
+                  :class="{
+                    selected: mesaEditSeleccionada === mesa.idMesa,
+                    ocupada: !mesa.disponible,
+                    insuficiente:
+                      mesa.disponible && !mesaTieneCapacidadCorrectaEdit(mesa),
+                  }"
+                  :disabled="!mesa.disponible || !mesaTieneCapacidadCorrectaEdit(mesa)"
+                  @click="seleccionarMesaEdit(mesa)"
+                >
+                  <span class="mesa-icon">🪑</span>
+                  <span class="mesa-num">Mesa {{ mesa.idMesa }}</span>
+                  <span class="mesa-capacidad"
+                    >{{ mesa.capacidad }}
+                    {{ mesa.capacidad === 1 ? "persona" : "personas" }}</span
+                  >
+                  <span v-if="!mesa.disponible" class="mesa-tag">Ocupada</span>
+                  <span v-else-if="!mesaTieneCapacidadCorrectaEdit(mesa)" class="mesa-tag"
+                    >Bloqueada</span
+                  >
+                </button>
+              </div>
+            </div>
+
+            <div class="modal-acciones">
+              <button class="btn-secondary" @click="cerrarEdicion">
+                Cancelar
+              </button>
+              <button
+                class="btn-primary"
+                :disabled="!puedeGuardarEdit || guardando"
+                @click="guardarEdicion"
+              >
+                <span v-if="!guardando">
+                  {{ personasEdit > personasOriginalEdit ? `Continuar al pago (${fianzaAdicionalFormateada}) →` : 'Guardar cambios' }}
                 </span>
-              </div>
-              <div class="calendar-legend">
-                <span class="legend-item"
-                  ><span class="legend-dot available"></span>Disponible</span
-                >
-                <span class="legend-item"
-                  ><span class="legend-dot unavailable"></span>Sin mesas</span
-                >
-                <span class="legend-item"
-                  ><span class="legend-dot selected-dot"></span
-                  >Seleccionado</span
-                >
-              </div>
-            </div>
-          </div>
-
-          <!-- ── MESA ── -->
-          <!-- PERSONAS -->
-          <div class="edit-seccion">
-            <label class="form-label">N&uacute;mero de comensales</label>
-            <div class="personas-selector">
-              <button
-                class="personas-btn"
-                :disabled="personasEdit <= personasOriginalEdit"
-                @click="cambiarPersonasEdit(-1)"
-              >
-                &minus;
-              </button>
-              <div class="personas-display">
-                <span class="personas-num">{{ personasEdit }}</span>
-                <span class="personas-label">{{ personasEdit === 1 ? "persona" : "personas" }}</span>
-              </div>
-              <button
-                class="personas-btn"
-                :disabled="personasEdit >= 12"
-                @click="cambiarPersonasEdit(1)"
-              >
-                +
-              </button>
-            </div>
-            <p class="form-hint">
-              Puedes aumentar los comensales, pero no reducirlos desde esta pantalla.
-            </p>
-          </div>
-
-          <div class="edit-seccion" v-if="fechaEditSeleccionada">
-            <label class="form-label">&iquest;D&oacute;nde prefieres sentarte?</label>
-            <div class="ubicacion-cards">
-              <button
-                class="ubicacion-card"
-                :class="{ selected: ubicacionEdit === 'interior' }"
-                @click="
-                  ubicacionEdit = 'interior';
-                  mesaEditSeleccionada = null;
-                "
-              >
-                <div class="ubicacion-icon">&#127968;</div>
-                <h3>Interior</h3>
-                <p>Ambiente &iacute;ntimo con decoraci&oacute;n andaluza, climatizado todo el a&ntilde;o.</p>
-                <div class="ubicacion-check">&#10003;</div>
-              </button>
-              <button
-                class="ubicacion-card"
-                :class="{ selected: ubicacionEdit === 'terraza' }"
-                @click="
-                  ubicacionEdit = 'terraza';
-                  mesaEditSeleccionada = null;
-                "
-              >
-                <div class="ubicacion-icon">&#127807;</div>
-                <h3>Terraza exterior</h3>
-                <p>Bajo el cielo de Granada. Disponible seg&uacute;n condiciones meteorol&oacute;gicas.</p>
-                <div class="ubicacion-check">&#10003;</div>
-              </button>
-            </div>
-
-            <label class="form-label">Selecciona mesa</label>
-            <div class="disponibilidad-info">
-              <div class="disp-badge" :class="disponibilidadEdit.clase">
-                <span class="disp-dot"></span>
-                {{ disponibilidadEdit.texto }}
-              </div>
-            </div>
-            <div class="mesas-grid">
-              <button
-                v-for="mesa in mesasDisponiblesEdit"
-                :key="mesa.idMesa"
-                class="mesa-card"
-                :class="{
-                  selected: mesaEditSeleccionada === mesa.idMesa,
-                  ocupada: !mesa.disponible,
-                  insuficiente:
-                    mesa.disponible && !mesaTieneCapacidadCorrectaEdit(mesa),
-                }"
-                :disabled="!mesa.disponible || !mesaTieneCapacidadCorrectaEdit(mesa)"
-                @click="seleccionarMesaEdit(mesa)"
-              >
-                <span class="mesa-icon">🪑</span>
-                <span class="mesa-num">Mesa {{ mesa.idMesa }}</span>
-                <span class="mesa-capacidad"
-                  >{{ mesa.capacidad }}
-                  {{ mesa.capacidad === 1 ? "persona" : "personas" }}</span
-                >
-                <span v-if="!mesa.disponible" class="mesa-tag">Ocupada</span>
-                <span v-else-if="!mesaTieneCapacidadCorrectaEdit(mesa)" class="mesa-tag"
-                  >Bloqueada</span
-                >
+                <span v-else>Guardando…</span>
               </button>
             </div>
           </div>
 
-          <div class="modal-acciones">
-            <button class="btn-secondary" @click="cerrarEdicion">
-              Cancelar
-            </button>
-            <button
-              class="btn-primary"
-              :disabled="!puedeGuardarEdit || guardando"
-              @click="guardarEdicion"
-            >
-              <span v-if="!guardando">Guardar cambios</span>
-              <span v-else>Guardando…</span>
-            </button>
+          <!-- PASO 2: Pago de Fianza Adicional -->
+          <div v-else class="modal-edit-pago">
+            <div class="modal-edit-header">
+              <span class="section-label"
+                >Abono de fianza adicional #LB{{
+                  String(reservaAeditar?.idReserva).slice(-6).toUpperCase()
+                }}</span
+              >
+              <h3 class="modal-title-left">Pago de comensales<br /><em>añadidos</em></h3>
+            </div>
+
+            <div class="resumen-pago-edit">
+              <div class="fianza-desglose">
+                <div class="fianza-desglose-line">
+                  <span>Comensales originales:</span>
+                  <span>{{ personasOriginalEdit }}</span>
+                </div>
+                <div class="fianza-desglose-line">
+                  <span>Nuevos comensales:</span>
+                  <span>{{ personasEdit }}</span>
+                </div>
+                <div class="fianza-desglose-line">
+                  <span>Nuevas personas añadidas:</span>
+                  <span>+{{ diferenciaPersonas }}</span>
+                </div>
+                <div class="fianza-desglose-total">
+                  <span>Fianza adicional a pagar:</span>
+                  <span class="fianza-amount-edit">{{ fianzaAdicionalFormateada }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="metodos-pago">
+              <button
+                v-for="m in metodosPagoEdit"
+                :key="m.id"
+                class="metodo-btn"
+                :class="{ selected: metodoPagoEdit === m.id }"
+                @click="metodoPagoEdit = m.id"
+              >
+                <span class="metodo-icon">{{ m.icon }}</span>
+                <span>{{ m.label }}</span>
+                <div class="metodo-check">✓</div>
+              </button>
+            </div>
+
+            <!-- Tarjeta de crédito -->
+            <div v-if="metodoPagoEdit === 'tarjeta'" class="tarjeta-form">
+              <div class="form-grid">
+                <div class="form-group full-width">
+                  <label class="form-label">Número de tarjeta</label>
+                  <input
+                    v-model="pagoEdit.numero"
+                    class="form-input"
+                    type="text"
+                    placeholder="0000 0000 0000 0000"
+                    maxlength="19"
+                    @input="formatCardEdit"
+                  />
+                </div>
+                <div class="form-group full-width">
+                  <label class="form-label">Titular de la tarjeta</label>
+                  <input v-model="pagoEdit.titular" class="form-input" type="text" placeholder="Nombre como aparece en la tarjeta" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Caducidad</label>
+                  <input v-model="pagoEdit.expiry" class="form-input" type="text" placeholder="MM/AA" maxlength="5" @input="formatExpiryEdit" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">CVV</label>
+                  <input
+                    v-model="pagoEdit.cvv"
+                    class="form-input"
+                    type="text"
+                    placeholder="•••"
+                    maxlength="4"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- Bizum -->
+            <div v-if="metodoPagoEdit === 'bizum'" class="bizum-form">
+              <div class="bizum-logo">Bizum</div>
+              <div class="form-group">
+                <label class="form-label">Número de teléfono Bizum</label>
+                <input v-model="pagoEdit.bizumTel" class="form-input" type="tel" placeholder="+34 600 000 000" />
+              </div>
+              <p class="form-hint">Recibirás una solicitud de pago de {{ fianzaAdicionalFormateada }} en tu app Bizum.</p>
+            </div>
+
+            <!-- PayPal -->
+            <div v-if="metodoPagoEdit === 'paypal'" class="paypal-form">
+              <div id="paypal-button-container-edit"></div>
+              <p class="form-hint">Paga de forma rápida y segura con tu cuenta de PayPal Sandbox.</p>
+            </div>
+
+            <div class="seguridad-badge">
+              <span>🔒</span>
+              <span>Pago seguro cifrado SSL. No almacenamos datos de tarjeta.</span>
+            </div>
+
+            <div class="modal-acciones">
+              <button class="btn-secondary" :disabled="guardando" @click="pasoEdit = 1">
+                ← Volver
+              </button>
+              <button
+                v-if="metodoPagoEdit !== 'paypal'"
+                class="btn-primary"
+                :disabled="!canPagarEdit || guardando"
+                @click="guardarEdicion"
+              >
+                <span v-if="!guardando">Pagar {{ fianzaAdicionalFormateada }} y confirmar</span>
+                <span v-else class="loading-dots">Procesando<span>.</span><span>.</span><span>.</span></span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -466,6 +588,23 @@ export default {
 
       cargandoMesasEdit: false,
       cargandoReservasEdit: false,
+
+      // Paso y pago en edición
+      pasoEdit: 1,
+      metodoPagoEdit: "tarjeta",
+      metodosPagoEdit: [
+        { id: "tarjeta", icon: "💳", label: "Tarjeta" },
+        { id: "bizum", icon: "📱", label: "Bizum" },
+        { id: "paypal", icon: "🅿️", label: "PayPal" },
+      ],
+      pagoEdit: {
+        numero: "",
+        titular: "",
+        expiry: "",
+        cvv: "",
+        bizumTel: "",
+      },
+      pagandoEdit: false,
     };
   },
 
@@ -558,6 +697,36 @@ export default {
       );
     },
 
+    diferenciaPersonas() {
+      return Math.max(0, this.personasEdit - this.personasOriginalEdit);
+    },
+
+    fianzaAdicional() {
+      return this.diferenciaPersonas * 2.5;
+    },
+
+    fianzaAdicionalFormateada() {
+      return `${Number(this.fianzaAdicional || 0).toLocaleString("es-ES", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })} €`;
+    },
+
+    canPagarEdit() {
+      if (this.metodoPagoEdit === "tarjeta") {
+        return (
+          this.pagoEdit.numero.length >= 19 &&
+          this.pagoEdit.titular &&
+          this.pagoEdit.expiry.length === 5 &&
+          this.pagoEdit.cvv.length >= 3
+        );
+      }
+      if (this.metodoPagoEdit === "bizum") {
+        return this.pagoEdit.bizumTel.length >= 9;
+      }
+      return false;
+    },
+
     horasHastaReservaCancelacion() {
       if (!this.reservaAcancelar) return 0;
 
@@ -577,10 +746,10 @@ export default {
         : "";
 
       if (this.cancelacionConDevolucion) {
-        return `Cancelas con al menos 48 horas de antelación. La fianza${fianza} queda marcada para devolución.`;
+        return `Cancelas con más de 48 horas de antelación. La fianza${fianza} queda marcada para devolución.`;
       }
 
-      return `Quedan menos de 48 horas para la reserva. La fianza${fianza} no es reembolsable en esta cancelación.`;
+      return `Quedan menos de 48 horas para la reserva. Al ser menos de 48 horas de antelación, la fianza${fianza} ya pagada no será devuelta.`;
     },
   },
 
@@ -601,6 +770,21 @@ export default {
       }
     },
 
+    pasoEdit(nuevoPaso) {
+      if (nuevoPaso === 2) {
+        this.$nextTick(() => {
+          this.checkAndInitPayPalEdit();
+        });
+      }
+    },
+
+    metodoPagoEdit(nuevoMetodo) {
+      if (nuevoMetodo === "paypal") {
+        this.$nextTick(() => {
+          this.checkAndInitPayPalEdit();
+        });
+      }
+    },
   },
 
   mounted() {
@@ -788,12 +972,20 @@ export default {
       if (!this.reservaAcancelar) return;
       this.cancelando = true;
       try {
+        const conDevolucion = this.cancelacionConDevolucion;
+        const estaPagado = this.reservaAcancelar.estadoPago === "pagado";
+        const updateBody = { estado: "cancelada" };
+
+        if (conDevolucion && estaPagado) {
+          updateBody.estadoPago = "reembolsado";
+        }
+
         const res = await fetch(
           `${DAB}/Reserva/idReserva/${this.reservaAcancelar.idReserva}`,
           {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ estado: "cancelada" }),
+            body: JSON.stringify(updateBody),
           },
         );
         if (!res.ok) throw new Error(await res.text());
@@ -801,11 +993,26 @@ export default {
         const idx = this.reservas.findIndex(
           (r) => r.idReserva === this.reservaAcancelar.idReserva,
         );
-        if (idx !== -1) this.reservas[idx].estado = "cancelada";
+        if (idx !== -1) {
+          this.reservas[idx].estado = "cancelada";
+          if (conDevolucion && estaPagado) {
+            this.reservas[idx].estadoPago = "reembolsado";
+          }
+        }
 
         this.modalCancelacion = false;
+
+        if (estaPagado) {
+          if (conDevolucion) {
+            this.mostrarToast("Reserva cancelada correctamente. Se ha solicitado la devolución de la fianza.");
+          } else {
+            this.mostrarToast("Reserva cancelada. Al ser menos de 48 horas de antelación, no se devolverá la fianza ya pagada.");
+          }
+        } else {
+          this.mostrarToast("Reserva cancelada correctamente.");
+        }
+
         this.reservaAcancelar = null;
-        this.mostrarToast("Reserva cancelada correctamente.");
       } catch (e) {
         console.error("Error cancelando:", e);
         alert("No se pudo cancelar la reserva.");
@@ -833,6 +1040,18 @@ export default {
       const f = new Date(reserva.fecha);
       this.mesVistaEdit = new Date(f.getUTCFullYear(), f.getUTCMonth(), 1);
 
+      // Reset payment variables
+      this.pasoEdit = 1;
+      this.metodoPagoEdit = "tarjeta";
+      this.pagoEdit = {
+        numero: "",
+        titular: "",
+        expiry: "",
+        cvv: "",
+        bizumTel: "",
+      };
+      this.pagandoEdit = false;
+
       this.modalEdicion = true;
       this.cargarReservasMesEdit();
     },
@@ -845,6 +1064,16 @@ export default {
       this.ubicacionEdit = null;
       this.personasEdit = 1;
       this.personasOriginalEdit = 1;
+      this.pasoEdit = 1;
+      this.metodoPagoEdit = "tarjeta";
+      this.pagoEdit = {
+        numero: "",
+        titular: "",
+        expiry: "",
+        cvv: "",
+        bizumTel: "",
+      };
+      this.pagandoEdit = false;
     },
 
     // ── CALENDARIO ──────────────────────────────────────────────
@@ -963,6 +1192,26 @@ export default {
 
     async guardarEdicion() {
       if (!this.puedeGuardarEdit || !this.reservaAeditar) return;
+
+      if (this.personasEdit > this.personasOriginalEdit && this.pasoEdit === 1) {
+        this.pasoEdit = 2;
+        return;
+      }
+
+      if (this.personasEdit > this.personasOriginalEdit && this.pasoEdit === 2) {
+        this.guardando = true;
+        this.pagandoEdit = true;
+        try {
+          await this.guardarEdicionConPago();
+        } catch (e) {
+          alert(e.message || "No se pudo procesar el pago.");
+        } finally {
+          this.guardando = false;
+          this.pagandoEdit = false;
+        }
+        return;
+      }
+
       this.guardando = true;
       try {
         const mesaElegida = this.mesasDisponiblesEdit.find(
@@ -973,7 +1222,6 @@ export default {
           throw new Error("Mesa bloqueada para este número de personas");
         }
 
-        // Campos exactos según la tabla MySQL
         const body = {
           fecha: this.fechaEditISO,
           idMesa: this.mesaEditSeleccionada,
@@ -1008,6 +1256,164 @@ export default {
         this.guardando = false;
       }
     },
+
+    async guardarEdicionConPago() {
+      const mesaElegida = this.mesasDisponiblesEdit.find(
+        (m) => m.idMesa === this.mesaEditSeleccionada,
+      );
+
+      if (!mesaElegida || !this.mesaTieneCapacidadCorrectaEdit(mesaElegida)) {
+        throw new Error("Mesa bloqueada para este número de personas");
+      }
+
+      const ahora = new Date();
+      const anio = ahora.getFullYear();
+      const mes = String(ahora.getMonth() + 1).padStart(2, "0");
+      const dia = String(ahora.getDate()).padStart(2, "0");
+      const horas = String(ahora.getHours()).padStart(2, "0");
+      const minutos = String(ahora.getMinutes()).padStart(2, "0");
+      const segundos = String(ahora.getSeconds()).padStart(2, "0");
+      const fechaPagoISO = `${anio}-${mes}-${dia} ${horas}:${minutos}:${segundos}`;
+
+      const nuevaFianza = this.personasEdit * 2.5;
+      const metodoGuardado =
+        this.metodoPagoEdit === "bizum"
+          ? "transferencia"
+          : "tarjeta";
+
+      const body = {
+        fecha: this.fechaEditISO,
+        idMesa: this.mesaEditSeleccionada,
+        numPersonas: this.personasEdit,
+        fianza: nuevaFianza,
+        estado: "confirmada",
+        estadoPago: "pagado",
+        fechaPago: fechaPagoISO,
+        metodoPago: metodoGuardado,
+        fechaLimitePago: null,
+      };
+
+      const res = await fetch(
+        `${DAB}/Reserva/idReserva/${this.reservaAeditar.idReserva}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        },
+      );
+      if (!res.ok) throw new Error(await res.text());
+
+      const idx = this.reservas.findIndex(
+        (r) => r.idReserva === this.reservaAeditar.idReserva,
+      );
+      if (idx !== -1) {
+        this.reservas[idx].fecha = this.fechaEditISO;
+        this.reservas[idx].idMesa = this.mesaEditSeleccionada;
+        this.reservas[idx].numPersonas = this.personasEdit;
+        this.reservas[idx].fianza = nuevaFianza;
+        this.reservas[idx].estado = "confirmada";
+        this.reservas[idx].estadoPago = "pagado";
+        this.reservas[idx].fechaPago = fechaPagoISO;
+        this.reservas[idx].metodoPago = metodoGuardado;
+      }
+
+      this.cerrarEdicion();
+      this.mostrarToast("¡Reserva modificada y fianza adicional abonada con éxito!");
+    },
+
+    formatCardEdit(e) {
+      let v = e.target.value.replace(/\D/g, "").substring(0, 16);
+      this.pagoEdit.numero = v.replace(/(.{4})/g, "$1 ").trim();
+    },
+
+    formatExpiryEdit(e) {
+      let v = e.target.value.replace(/\D/g, "").substring(0, 4);
+      if (v.length > 2) {
+        v = v.substring(0, 2) + "/" + v.substring(2);
+      }
+      this.pagoEdit.expiry = v;
+    },
+
+    checkAndInitPayPalEdit() {
+      if (this.pasoEdit !== 2 || this.metodoPagoEdit !== "paypal") return;
+
+      if (window.paypal) {
+        this.$nextTick(() => {
+          this.renderPayPalButtonsEdit();
+        });
+        return;
+      }
+
+      const clientId = import.meta.env.VITE_PAYPAL_CLIENT_ID || "sb";
+      const scriptId = "paypal-sdk-script";
+
+      let script = document.getElementById(scriptId);
+      if (!script) {
+        script = document.createElement("script");
+        script.id = scriptId;
+        script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=EUR`;
+        script.async = true;
+        script.onload = () => {
+          this.renderPayPalButtonsEdit();
+        };
+        script.onerror = (err) => {
+          console.error("Error al cargar el SDK de PayPal en edición:", err);
+          alert("No se pudo cargar el SDK de PayPal. Por favor, inténtelo de nuevo.");
+        };
+        document.head.appendChild(script);
+      } else {
+        script.addEventListener("load", () => {
+          this.renderPayPalButtonsEdit();
+        });
+      }
+    },
+
+    renderPayPalButtonsEdit() {
+      const container = document.getElementById("paypal-button-container-edit");
+      if (!container) return;
+
+      container.innerHTML = "";
+
+      window.paypal
+        .Buttons({
+          createOrder: (data, actions) => {
+            return actions.order.create({
+              purchase_units: [
+                {
+                  amount: {
+                    currency_code: "EUR",
+                    value: this.fianzaAdicional.toFixed(2),
+                  },
+                  description: `Fianza adicional por aumento de comensales - Reserva #LB${String(
+                    this.reservaAeditar.idReserva
+                  )
+                    .slice(-6)
+                    .toUpperCase()}`,
+                },
+              ],
+            });
+          },
+          onApprove: async (data, actions) => {
+            this.guardando = true;
+            this.pagandoEdit = true;
+            try {
+              await actions.order.capture();
+              await this.guardarEdicionConPago();
+            } catch (error) {
+              console.error("Error al capturar el pago adicional:", error);
+              alert("Ocurrió un error al procesar el pago con PayPal.");
+            } finally {
+              this.guardando = false;
+              this.pagandoEdit = false;
+            }
+          },
+          onError: (err) => {
+            console.error("PayPal Edit Error:", err);
+            alert("El pago con PayPal ha fallado o ha sido cancelado.");
+          },
+        })
+        .render("#paypal-button-container-edit");
+    },
   },
 };
 </script>
@@ -1019,6 +1425,145 @@ export default {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+}
+
+/* ─── PAYPAL EN MODAL EDICIÓN ─── */
+.paypal-form {
+  margin-top: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+/* RESUMEN DE PAGO EN EDICIÓN */
+.resumen-pago-edit {
+  background: var(--dark, #1a1410);
+  border-radius: 4px;
+  padding: 1.4rem;
+  margin-bottom: 1.6rem;
+  color: var(--cream, #f5f0e8);
+}
+.fianza-desglose {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.fianza-desglose-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  color: rgba(245, 240, 232, 0.6);
+}
+.fianza-desglose-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.88rem;
+  font-weight: 500;
+  margin-top: 0.8rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid rgba(245, 240, 232, 0.15);
+}
+.fianza-amount-edit {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 1.4rem;
+  color: var(--gold, #c9963a);
+}
+
+.metodos-pago {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 1.6rem;
+}
+.metodo-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: white;
+  border: 1.5px solid rgba(45, 37, 32, 0.12);
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: "Jost", sans-serif;
+  font-size: 0.78rem;
+  color: var(--text);
+  transition: all 0.2s;
+  text-align: left;
+}
+.metodo-btn:hover {
+  border-color: var(--gold);
+}
+.metodo-btn.selected {
+  border-color: var(--dark);
+  background: rgba(26, 20, 16, 0.02);
+}
+.metodo-icon {
+  font-size: 1.2rem;
+}
+.metodo-check {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--dark);
+  color: var(--cream);
+  font-size: 0.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.metodo-btn.selected .metodo-check {
+  opacity: 1;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.2rem;
+  margin-bottom: 1.6rem;
+}
+.form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.seguridad-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(74, 181, 100, 0.06);
+  border: 1px solid rgba(74, 181, 100, 0.2);
+  border-radius: 4px;
+  font-size: 0.72rem;
+  color: rgba(45, 37, 32, 0.55);
+  margin: 1.4rem 0;
+}
+
+.bizum-logo {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 2rem;
+  color: #004b9b;
+  font-weight: 400;
+  margin-bottom: 1.2rem;
+  letter-spacing: 0.05em;
+}
+
+.loading-dots span {
+  animation: blink 1.4s ease infinite;
+}
+.loading-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.loading-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+@keyframes blink {
+  0%, 80%, 100% { opacity: 0.2; }
+  40% { opacity: 1; }
 }
 
 :root {

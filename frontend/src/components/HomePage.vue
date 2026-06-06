@@ -18,10 +18,6 @@
         </p>
         <RouterLink to="/reservas" class="hero-cta">Reservar mesa</RouterLink>
       </div>
-      <div class="hero-scroll">
-        <div class="hero-scroll-line"></div>
-        <span>Descubrir</span>
-      </div>
     </section>
 
     <!-- POR QUÉ VENIR -->
@@ -141,7 +137,6 @@ const cards = [
 ];
 
 onMounted(() => {
-
   const revealEls = document.querySelectorAll(".reveal");
   const io = new IntersectionObserver(
     (entries) => {
@@ -219,7 +214,11 @@ body {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 50% 42%, rgba(26, 20, 16, 0.18) 0%, rgba(26, 20, 16, 0.62) 58%),
+    radial-gradient(
+      circle at 50% 42%,
+      rgba(26, 20, 16, 0.18) 0%,
+      rgba(26, 20, 16, 0.62) 58%
+    ),
     linear-gradient(
       160deg,
       rgba(12, 9, 7, 0.84) 0%,

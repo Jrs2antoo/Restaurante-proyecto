@@ -347,6 +347,12 @@
                   <p class="form-hint">Recibirás una solicitud de pago de {{ fianzaTotalFormateada }} en tu app Bizum.</p>
                 </div>
 
+                <!-- PayPal -->
+                <div v-if="metodoPago === 'paypal'" class="paypal-form">
+                  <div id="paypal-button-container"></div>
+                  <p class="form-hint">Paga de forma rápida y segura con tu cuenta de PayPal Sandbox.</p>
+                </div>
+
                 <!-- Seguridad -->
                 <div class="seguridad-badge">
                   <span>🔒</span>
@@ -356,6 +362,7 @@
                 <div class="step-actions">
                   <button class="btn-secondary" @click="goStep(2)">← Volver</button>
                   <button
+                    v-if="metodoPago !== 'paypal'"
                     class="btn-primary btn-pago"
                     :disabled="!canPagar || pagando"
                     @click="confirmarReserva"
@@ -492,6 +499,11 @@ export default {
           id: "bizum",
           icon: "📱",
           label: "Bizum",
+        },
+        {
+          id: "paypal",
+          icon: "🅿️",
+          label: "PayPal",
         },
       ],
 
@@ -720,6 +732,22 @@ export default {
 
       if (!mesa || !this.mesaTieneCapacidadCorrecta(mesa)) {
         this.mesaSeleccionada = null;
+      }
+    },
+
+    currentStep(nuevoPaso) {
+      if (nuevoPaso === 3) {
+        this.$nextTick(() => {
+          this.checkAndInitPayPal();
+        });
+      }
+    },
+
+    metodoPago(nuevoMetodo) {
+      if (nuevoMetodo === "paypal") {
+        this.$nextTick(() => {
+          this.checkAndInitPayPal();
+        });
       }
     },
   },
@@ -1450,6 +1478,163 @@ export default {
         behavior: "smooth",
       });
     },
+
+    checkAndInitPayPal() {
+      if (this.currentStep !== 3 || this.metodoPago !== "paypal") return;
+
+      if (window.paypal) {
+        this.$nextTick(() => {
+          this.renderPayPalButtons();
+        });
+        return;
+      }
+
+      const clientId = import.meta.env.VITE_PAYPAL_CLIENT_ID || "sb";
+      const scriptId = "paypal-sdk-script";
+
+      let script = document.getElementById(scriptId);
+      if (!script) {
+        script = document.createElement("script");
+        script.id = scriptId;
+        script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=EUR`;
+        script.async = true;
+        script.onload = () => {
+          this.renderPayPalButtons();
+        };
+        script.onerror = (err) => {
+          console.error("Error al cargar el SDK de PayPal:", err);
+          alert("No se pudo cargar el SDK de PayPal. Por favor, inténtelo de nuevo.");
+        };
+        document.head.appendChild(script);
+      } else {
+        script.addEventListener("load", () => {
+          this.renderPayPalButtons();
+        });
+      }
+    },
+
+    renderPayPalButtons() {
+      const container = document.getElementById("paypal-button-container");
+      if (!container) return;
+
+      container.innerHTML = "";
+
+      window.paypal
+        .Buttons({
+          createOrder: (data, actions) => {
+            return actions.order.create({
+              purchase_units: [
+                {
+                  amount: {
+                    currency_code: "EUR",
+                    value: this.fianzaTotal.toFixed(2),
+                  },
+                  description: `Fianza de reserva para Mesa ${this.mesaSeleccionada} - Restaurante La Brasa`,
+                },
+              ],
+            });
+          },
+          onApprove: async (data, actions) => {
+            this.pagando = true;
+            try {
+              const details = await actions.order.capture();
+              await this.guardarReservaPayPal(details);
+            } catch (error) {
+              console.error("Error al capturar el pago:", error);
+              alert("Ocurrió un error al procesar el pago con PayPal.");
+              this.pagando = false;
+            }
+          },
+          onError: (err) => {
+            console.error("PayPal Error:", err);
+            alert("El pago con PayPal ha fallado o ha sido cancelado.");
+          },
+        })
+        .render("#paypal-button-container");
+    },
+
+    async guardarReservaPayPal(details) {
+      this.pagando = true;
+
+      try {
+        const mesaElegida = this.mesasDisponibles.find(
+          m => m.idMesa === this.mesaSeleccionada
+        );
+
+        if (!mesaElegida) {
+          throw new Error("Mesa no disponible");
+        }
+
+        if (!this.mesaTieneCapacidadCorrecta(mesaElegida)) {
+          throw new Error("Mesa bloqueada para este número de personas");
+        }
+
+        const emailUsuario = this.usuarioActual?.email;
+
+        if (!emailUsuario) {
+          throw new Error("Debes iniciar sesión");
+        }
+
+        const usuarioMySQL = await this.obtenerOCrearUsuarioMySQL(emailUsuario);
+
+        const ahora = new Date();
+        const anio = ahora.getFullYear();
+        const mes = String(ahora.getMonth() + 1).padStart(2, "0");
+        const dia = String(ahora.getDate()).padStart(2, "0");
+        const horas = String(ahora.getHours()).padStart(2, "0");
+        const minutos = String(ahora.getMinutes()).padStart(2, "0");
+        const segundos = String(ahora.getSeconds()).padStart(2, "0");
+        const fechaPagoISO = `${anio}-${mes}-${dia} ${horas}:${minutos}:${segundos}`;
+
+        const body = {
+          idUsuario: usuarioMySQL.idUsuario,
+          idMesa: mesaElegida.idMesa,
+          fecha: this.fechaISO,
+          hora: "20:00:00",
+          numPersonas: this.personas,
+          estado: "confirmada",
+          fianza: this.fianzaTotal,
+          estadoPago: "pagado",
+          fechaPago: fechaPagoISO,
+          metodoPago: "tarjeta",
+          fechaLimitePago: null,
+        };
+
+        const res = await fetch(`${DAB}/Reserva`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(body),
+        });
+
+        if (!res.ok) {
+          const txt = await res.text();
+          throw new Error(txt);
+        }
+
+        const data = await res.json();
+        const reservaCreada = data.value?.[0] || data;
+
+        await this.cargarReservasDelDia();
+        await this.cargarReservasMes();
+
+        this.referencia =
+          "LB" +
+          String(reservaCreada.idReserva || Date.now())
+            .slice(-6)
+            .toUpperCase();
+
+        this.currentStep = 4;
+        sessionStorage.removeItem(RESERVA_DRAFT_KEY);
+
+      } catch (e) {
+        console.error("Error reserva PayPal:", e);
+        alert(e.message);
+      } finally {
+        this.pagando = false;
+      }
+    },
   },
 };
 </script>
@@ -1922,6 +2107,11 @@ export default {
   font-family: "Cormorant Garamond", serif; font-size: 2rem;
   color: #004b9b; font-weight: 400; margin-bottom: 1.2rem;
   letter-spacing: 0.05em;
+}
+
+/* ─── PAYPAL ─── */
+.paypal-form {
+  margin-bottom: 1.5rem;
 }
 
 /* ─── SEGURIDAD ─── */
