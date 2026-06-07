@@ -536,6 +536,7 @@ import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
 import Cabecera from "./Cabecera.vue";
 import Footer from "./Footer.vue";
 import { API_BASE_URL as DAB } from "@/config/api";
+import { getUserDbEmail } from "@/config/authUser";
 
 export default {
   name: "MisReservasPage",
@@ -830,7 +831,7 @@ export default {
     },
 
     async resolverIdUsuarioMySQL() {
-      const email = this.usuarioActual?.email;
+      const email = getUserDbEmail(this.usuarioActual);
       if (!email) return;
       try {
         const res = await fetch(`${DAB}/Usuario`);

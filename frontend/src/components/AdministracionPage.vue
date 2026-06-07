@@ -71,7 +71,7 @@
             <tr v-for="p in productos" :key="p.idProducto">
               <td>{{ p.idProducto }}</td>
               <td>{{ p.nombre }}</td>
-              <td>{{ p.precio }}€</td>
+              <td>{{ formatPrecio(p.precio) }}</td>
               <td>{{ p.categoria }}</td>
               <td class="td-desc">{{ p.descripcion || '—' }}</td>
               <td><span class="badge" :class="p.disponible ? 'disponible' : 'nodisponible'">{{ p.disponible ? 'Sí' : 'No' }}</span></td>
@@ -338,7 +338,22 @@ import { API_BASE_URL as API } from "@/config/api";
 
 const categoriasProducto = ["Entrantes", "Carnes", "Pescados", "Postres", "Bebidas"];
 const ubicacionesMesa = ["Interior", "Terraza"];
-const formatearPrecioParaApi = (precio) => Number(precio).toFixed(2).replace(".", ",");
+const parsePrecio = (precio) => {
+  const text = String(precio ?? "").trim();
+  const normalized = text.includes(",") ? text.replace(/\./g, "").replace(",", ".") : text;
+  return Number(normalized);
+};
+const normalizarPrecioProducto = (precio) => {
+  const value = Number(precio);
+  if (!Number.isFinite(value)) return 0;
+  return value >= 100 ? value / 100 : value;
+};
+const formatPrecio = (precio) =>
+    `${normalizarPrecioProducto(precio).toLocaleString("es-ES", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}€`;
+const formatearPrecioParaApi = (precio) => Number(precio.toFixed(2));
 const productoSoportaImagenUrl = ref(false);
 
 // ── Supabase Storage ─────────────────────────────────────────
@@ -542,6 +557,7 @@ const openAddProducto = () => {
 const openEditProducto = (p) => {
   editingProducto.value = {
     ...p,
+    precio: normalizarPrecioProducto(p.precio).toFixed(2),
     categoria: categoriasProducto.includes(p.categoria) ? p.categoria : "Entrantes",
   };
   modalProducto.value = true;
@@ -549,7 +565,7 @@ const openEditProducto = (p) => {
 
 const saveProducto = async () => {
   const { idProducto, nombre, precio, categoria, descripcion, disponible, imagen_url } = editingProducto.value;
-  const precioNumero = Number(precio);
+  const precioNumero = parsePrecio(precio);
   if (!nombre?.trim() || !Number.isFinite(precioNumero) || !categoriasProducto.includes(categoria)) {
     showToast("Revisa nombre, precio y categoría del producto.", "error");
     return;

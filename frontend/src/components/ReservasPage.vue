@@ -437,6 +437,7 @@ import { getAuth, onAuthStateChanged } from "firebase/auth";
 import Cabecera from "./Cabecera.vue";
 import Footer from "./Footer.vue";
 import { API_BASE_URL as DAB } from "@/config/api";
+import { getUserDbEmail } from "@/config/authUser";
 
 const RESERVA_DRAFT_KEY = "laBrasaReservaPendiente";
 
@@ -849,12 +850,14 @@ export default {
     async autocompletarContacto() {
 
       const emailUsuario =
-          this.usuarioActual?.email;
+          getUserDbEmail(this.usuarioActual);
 
       if (!emailUsuario) return;
 
-      this.contacto.email = emailUsuario;
-      this.contactoBloqueado.email = true;
+      if (this.usuarioActual?.email) {
+        this.contacto.email = this.usuarioActual.email;
+        this.contactoBloqueado.email = true;
+      }
 
       if (!this.contacto.nombre && this.usuarioActual?.displayName) {
         this.contacto.nombre = this.usuarioActual.displayName;
@@ -1187,7 +1190,7 @@ export default {
           throw new Error("Mesa bloqueada para este número de personas");
         }
 
-        const emailUsuario = this.usuarioActual?.email;
+        const emailUsuario = getUserDbEmail(this.usuarioActual);
 
         if (!emailUsuario) {
           throw new Error("Debes iniciar sesión");
@@ -1569,7 +1572,7 @@ export default {
           throw new Error("Mesa bloqueada para este número de personas");
         }
 
-        const emailUsuario = this.usuarioActual?.email;
+        const emailUsuario = getUserDbEmail(this.usuarioActual);
 
         if (!emailUsuario) {
           throw new Error("Debes iniciar sesión");

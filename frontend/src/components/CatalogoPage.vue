@@ -11,6 +11,12 @@ const error = ref(null);
 const categorias = ref(["Todo"]);
 const platos = ref([]);
 
+const normalizarPrecioProducto = (precio) => {
+  const value = Number(precio);
+  if (!Number.isFinite(value)) return 0;
+  return value >= 100 ? value / 100 : value;
+};
+
 const cargarProductos = async () => {
   const res = await fetch(
       `${API}/Producto?$filter=disponible eq true&$orderby=categoria,nombre`,
@@ -27,7 +33,7 @@ const cargarProductos = async () => {
     id: p.idProducto,
     nombre: p.nombre,
     categoria: p.categoria,
-    precio: parseFloat(p.precio),
+    precio: normalizarPrecioProducto(p.precio),
     desc: p.descripcion ?? "",
     imagen:
         p.imagen_url ??

@@ -105,6 +105,7 @@
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { apiUrl } from '@/config/api'
+import { getUserDbEmail, getUserDisplayName } from '@/config/authUser'
 import {
   getAuth,
   createUserWithEmailAndPassword,
@@ -221,13 +222,10 @@ async function handleSocial(ProviderClass) {
   try {
     const { user } = await signInWithPopup(auth, new ProviderClass())
 
-    if (!user.email) {
-      console.warn('El proveedor no devolvió email; no se guarda en BD')
-      router.push(destinoTrasRegistro())
-      return
-    }
+    const dbEmail = getUserDbEmail(user)
+    if (!dbEmail) throw new Error('No se pudo obtener un identificador del usuario')
 
-    await saveUserToDb(user.displayName || '', user.email, user.uid)
+    await saveUserToDb(getUserDisplayName(user), dbEmail, user.uid)
     router.push(destinoTrasRegistro())
   } catch (err) {
     console.error('handleSocial error:', err.code, err.message)

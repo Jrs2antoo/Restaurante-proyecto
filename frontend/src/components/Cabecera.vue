@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
 import { apiUrl } from "@/config/api";
+import { getUserDbEmail } from "@/config/authUser";
 
 const router = useRouter();
 const route = useRoute();
@@ -54,7 +55,7 @@ const fetchApiList = async (entity, filter = "") => {
 };
 
 const comprobarAdmin = async (user) => {
-  const email = user?.email?.toLowerCase();
+  const email = getUserDbEmail(user).toLowerCase();
   if (!email) {
     esAdmin.value = false;
     return;
