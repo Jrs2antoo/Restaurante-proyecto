@@ -3,167 +3,278 @@
     <Cabecera />
 
     <div class="admin-container">
-    <aside class="admin-sidebar">
-      <nav class="sidebar-nav">
-        <button :class="{ active: currentTab === 'usuarios' }" @click="currentTab = 'usuarios'">👤 Usuarios</button>
-        <button :class="{ active: currentTab === 'productos' }" @click="currentTab = 'productos'">🍽️ Productos</button>
-        <button :class="{ active: currentTab === 'reservas' }" @click="currentTab = 'reservas'">📅 Reservas</button>
-        <button :class="{ active: currentTab === 'mesas' }" @click="currentTab = 'mesas'">🪑 Mesas</button>
-      </nav>
-      <button class="btn-logout" @click="handleLogout">🚪 Cerrar sesión</button>
-    </aside>
+      <aside class="admin-sidebar">
+        <nav class="sidebar-nav">
+          <button
+            :class="{ active: currentTab === 'usuarios' }"
+            @click="currentTab = 'usuarios'"
+          >
+            👤 Usuarios
+          </button>
+          <button
+            :class="{ active: currentTab === 'productos' }"
+            @click="currentTab = 'productos'"
+          >
+            🍽️ Productos
+          </button>
+          <button
+            :class="{ active: currentTab === 'reservas' }"
+            @click="currentTab = 'reservas'"
+          >
+            📅 Reservas
+          </button>
+          <button
+            :class="{ active: currentTab === 'mesas' }"
+            @click="currentTab = 'mesas'"
+          >
+            🪑 Mesas
+          </button>
+        </nav>
+        <button class="btn-logout" @click="handleLogout">
+          🚪 Cerrar sesión
+        </button>
+      </aside>
 
-    <main class="admin-main">
-      <header class="admin-header">
-        <h1>{{ tabTitles[currentTab] }}</h1>
-        <button v-if="currentTab === 'productos'" class="btn-add" @click="openAddProducto">+ Nuevo Producto</button>
-        <button v-if="currentTab === 'mesas'" class="btn-add" @click="openAddMesa">+ Nueva Mesa</button>
-        <button v-if="currentTab === 'reservas'" class="btn-add" @click="openAddReserva">+ Nueva Reserva</button>
-      </header>
+      <main class="admin-main">
+        <header class="admin-header">
+          <h1>{{ tabTitles[currentTab] }}</h1>
+          <button
+            v-if="currentTab === 'productos'"
+            class="btn-add"
+            @click="openAddProducto"
+          >
+            + Nuevo Producto
+          </button>
+          <button
+            v-if="currentTab === 'mesas'"
+            class="btn-add"
+            @click="openAddMesa"
+          >
+            + Nueva Mesa
+          </button>
+          <button
+            v-if="currentTab === 'reservas'"
+            class="btn-add"
+            @click="openAddReserva"
+          >
+            + Nueva Reserva
+          </button>
+        </header>
 
-      <div v-if="loading" class="state-msg">Conectando con la base de datos...</div>
-      <div v-else-if="error" class="state-msg error">{{ error }}</div>
-
-      <div v-else class="admin-card table-wrapper">
-        <div class="table-wrapper">
-
-          <!-- TABLA USUARIOS -->
-          <table v-if="currentTab === 'usuarios'">
-            <thead>
-            <tr>
-              <th>ID</th>
-              <th>Nombre</th>
-              <th>Apellidos</th>
-              <th>Email</th>
-              <th>Rol</th>
-              <th>Acciones</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr v-for="u in usuarios" :key="u.idUsuario">
-              <td>{{ u.idUsuario }}</td>
-              <td>{{ u.nombre }}</td>
-              <td>{{ u.apellido }}</td>
-              <td>{{ u.email }}</td>
-              <td><span class="badge" :class="u.rolVisual">{{ u.rolVisual }}</span></td>
-              <td class="actions">
-                <button class="btn-edit" @click="openEditUsuario(u)">✏️ Editar</button>
-                <button class="btn-delete" @click="confirmDelete('usuario', u.idUsuario)">🗑️ Eliminar</button>
-              </td>
-            </tr>
-            </tbody>
-          </table>
-
-          <!-- TABLA PRODUCTOS -->
-          <table v-if="currentTab === 'productos'">
-            <thead>
-            <tr>
-              <th>ID</th>
-              <th>Nombre</th>
-              <th>Precio</th>
-              <th>Categoría</th>
-              <th>Descripción</th>
-              <th>Disponible</th>
-              <th>Acciones</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr v-for="p in productos" :key="p.idProducto">
-              <td>{{ p.idProducto }}</td>
-              <td>{{ p.nombre }}</td>
-              <td>{{ p.precio }}€</td>
-              <td>{{ p.categoria }}</td>
-              <td class="td-desc">{{ p.descripcion || '—' }}</td>
-              <td><span class="badge" :class="p.disponible ? 'disponible' : 'nodisponible'">{{ p.disponible ? 'Sí' : 'No' }}</span></td>
-              <td class="actions">
-                <button class="btn-edit" @click="openEditProducto(p)">✏️ Editar</button>
-                <button class="btn-delete" @click="confirmDelete('producto', p.idProducto)">🗑️ Eliminar</button>
-              </td>
-            </tr>
-            </tbody>
-          </table>
-
-          <!-- TABLA MESAS -->
-          <table v-if="currentTab === 'mesas'">
-            <thead>
-            <tr>
-              <th>ID Mesa</th>
-              <th>Capacidad</th>
-              <th>Ubicación</th>
-              <th>Estado</th>
-              <th>Acciones</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr v-for="m in mesas" :key="m.idMesa">
-              <td><strong>#{{ m.idMesa }}</strong></td>
-              <td>{{ m.capacidad }} personas</td>
-              <td>{{ m.ubicacion }}</td>
-              <td>
-                <span class="badge" :class="m.disponible ? 'disponible' : 'nodisponible'">
-                  {{ m.disponible ? 'Disponible' : 'Ocupada' }}
-                </span>
-              </td>
-              <td class="actions">
-                <button class="btn-edit" @click="openEditMesa(m)">✏️ Editar</button>
-                <button class="btn-delete" @click="confirmDelete('mesa', m.idMesa)">🗑️ Eliminar</button>
-              </td>
-            </tr>
-            </tbody>
-          </table>
-
-          <!-- TABLA RESERVAS -->
-          <table v-if="currentTab === 'reservas'">
-            <thead>
-            <tr>
-              <th>ID</th>
-              <th>Mesa</th>
-              <th>Fecha</th>
-              <th>Hora</th>
-              <th>Personas</th>
-              <th>Fianza</th>
-              <th>Estado Pago</th>
-              <th>Acciones</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr v-for="r in reservas" :key="r.idReserva">
-              <td>{{ r.idReserva }}</td>
-              <td>Mesa {{ r.idMesa }}</td>
-              <td>{{ r.fecha }}</td>
-              <td>{{ formatHora(r.hora) }}</td>
-              <td>{{ r.numPersonas }}</td>
-              <td>{{ formatFianza(r.fianza, r.numPersonas) }}</td>
-              <td><span class="badge" :class="r.estadoPago === 'pagado' ? 'disponible' : 'nodisponible'">{{ r.estadoPago }}</span></td>
-              <td class="actions">
-                <button class="btn-edit" @click="openEditReserva(r)">✏️ Editar</button>
-                <button class="btn-delete" @click="confirmDelete('reserva', r.idReserva)">🗑️ Eliminar</button>
-              </td>
-            </tr>
-            </tbody>
-          </table>
+        <div v-if="loading" class="state-msg">
+          Conectando con la base de datos...
         </div>
-      </div>
-    </main>
+        <div v-else-if="error" class="state-msg error">{{ error }}</div>
+
+        <div v-else class="admin-card table-wrapper">
+          <div class="table-wrapper">
+            <!-- TABLA USUARIOS -->
+            <table v-if="currentTab === 'usuarios'">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Nombre</th>
+                  <th>Apellidos</th>
+                  <th>Email</th>
+                  <th>Rol</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="u in usuarios" :key="u.idUsuario">
+                  <td>{{ u.idUsuario }}</td>
+                  <td>{{ u.nombre }}</td>
+                  <td>{{ u.apellido }}</td>
+                  <td>{{ u.email }}</td>
+                  <td>
+                    <span class="badge" :class="u.rolVisual">{{
+                      u.rolVisual
+                    }}</span>
+                  </td>
+                  <td class="actions">
+                    <button class="btn-edit" @click="openEditUsuario(u)">
+                      ✏️ Editar
+                    </button>
+                    <button
+                      class="btn-delete"
+                      @click="confirmDelete('usuario', u.idUsuario)"
+                    >
+                      🗑️ Eliminar
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <!-- TABLA PRODUCTOS -->
+            <table v-if="currentTab === 'productos'">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Nombre</th>
+                  <th>Precio</th>
+                  <th>Categoría</th>
+                  <th>Descripción</th>
+                  <th>Disponible</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="p in productos" :key="p.idProducto">
+                  <td>{{ p.idProducto }}</td>
+                  <td>{{ p.nombre }}</td>
+                  <td>{{ formatPrecio(p.precio) }}</td>
+                  <td>{{ p.categoria }}</td>
+                  <td class="td-desc">{{ p.descripcion || "—" }}</td>
+                  <td>
+                    <span
+                      class="badge"
+                      :class="p.disponible ? 'disponible' : 'nodisponible'"
+                      >{{ p.disponible ? "Sí" : "No" }}</span
+                    >
+                  </td>
+                  <td class="actions">
+                    <button class="btn-edit" @click="openEditProducto(p)">
+                      ✏️ Editar
+                    </button>
+                    <button
+                      class="btn-delete"
+                      @click="confirmDelete('producto', p.idProducto)"
+                    >
+                      🗑️ Eliminar
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <!-- TABLA MESAS -->
+            <table v-if="currentTab === 'mesas'">
+              <thead>
+                <tr>
+                  <th>ID Mesa</th>
+                  <th>Capacidad</th>
+                  <th>Ubicación</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="m in mesas" :key="m.idMesa">
+                  <td>
+                    <strong>#{{ m.idMesa }}</strong>
+                  </td>
+                  <td>{{ m.capacidad }} personas</td>
+                  <td>{{ m.ubicacion }}</td>
+                  <td>
+                    <span
+                      class="badge"
+                      :class="m.disponible ? 'disponible' : 'nodisponible'"
+                    >
+                      {{ m.disponible ? "Disponible" : "Ocupada" }}
+                    </span>
+                  </td>
+                  <td class="actions">
+                    <button class="btn-edit" @click="openEditMesa(m)">
+                      ✏️ Editar
+                    </button>
+                    <button
+                      class="btn-delete"
+                      @click="confirmDelete('mesa', m.idMesa)"
+                    >
+                      🗑️ Eliminar
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <!-- TABLA RESERVAS -->
+            <table v-if="currentTab === 'reservas'">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Mesa</th>
+                  <th>Fecha</th>
+                  <th>Hora</th>
+                  <th>Personas</th>
+                  <th>Fianza</th>
+                  <th>Estado Pago</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="r in reservas" :key="r.idReserva">
+                  <td>{{ r.idReserva }}</td>
+                  <td>Mesa {{ r.idMesa }}</td>
+                  <td>{{ r.fecha }}</td>
+                  <td>{{ formatHora(r.hora) }}</td>
+                  <td>{{ r.numPersonas }}</td>
+                  <td>{{ formatFianza(r.fianza, r.numPersonas) }}</td>
+                  <td>
+                    <span
+                      class="badge"
+                      :class="
+                        r.estadoPago === 'pagado'
+                          ? 'disponible'
+                          : 'nodisponible'
+                      "
+                      >{{ r.estadoPago }}</span
+                    >
+                  </td>
+                  <td class="actions">
+                    <button class="btn-edit" @click="openEditReserva(r)">
+                      ✏️ Editar
+                    </button>
+                    <button
+                      class="btn-delete"
+                      @click="confirmDelete('reserva', r.idReserva)"
+                    >
+                      🗑️ Eliminar
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
     </div>
 
     <!-- ═══════════════════════════════════
          MODAL EDITAR / CREAR USUARIO
     ═══════════════════════════════════ -->
-    <div v-if="modalUsuario" class="modal-overlay" @click.self="modalUsuario = false">
+    <div
+      v-if="modalUsuario"
+      class="modal-overlay"
+      @click.self="modalUsuario = false"
+    >
       <div class="modal">
         <h2>Editar Usuario</h2>
         <div class="form-group">
           <label>Nombre</label>
-          <input v-model="editingUsuario.nombre" type="text" placeholder="Nombre" />
+          <input
+            v-model="editingUsuario.nombre"
+            type="text"
+            placeholder="Nombre"
+          />
         </div>
         <div class="form-group">
           <label>Apellidos</label>
-          <input v-model="editingUsuario.apellido" type="text" placeholder="Apellidos" />
+          <input
+            v-model="editingUsuario.apellido"
+            type="text"
+            placeholder="Apellidos"
+          />
         </div>
         <div class="form-group">
           <label>Email (no editable)</label>
-          <input :value="editingUsuario.email" type="text" disabled class="input-disabled" />
+          <input
+            :value="editingUsuario.email"
+            type="text"
+            disabled
+            class="input-disabled"
+          />
         </div>
         <div class="form-group">
           <label>Rol</label>
@@ -174,7 +285,9 @@
           </select>
         </div>
         <div class="modal-actions">
-          <button class="btn-cancel" @click="modalUsuario = false">Cancelar</button>
+          <button class="btn-cancel" @click="modalUsuario = false">
+            Cancelar
+          </button>
           <button class="btn-save" @click="saveUsuario">Guardar cambios</button>
         </div>
       </div>
@@ -183,28 +296,53 @@
     <!-- ═══════════════════════════════════
          MODAL EDITAR / CREAR PRODUCTO
     ═══════════════════════════════════ -->
-    <div v-if="modalProducto" class="modal-overlay" @click.self="modalProducto = false">
+    <div
+      v-if="modalProducto"
+      class="modal-overlay"
+      @click.self="modalProducto = false"
+    >
       <div class="modal">
-        <h2>{{ editingProducto.idProducto ? 'Editar Producto' : 'Nuevo Producto' }}</h2>
+        <h2>
+          {{
+            editingProducto.idProducto ? "Editar Producto" : "Nuevo Producto"
+          }}
+        </h2>
         <div class="form-group">
           <label>Nombre</label>
-          <input v-model="editingProducto.nombre" type="text" placeholder="Nombre del producto" />
+          <input
+            v-model="editingProducto.nombre"
+            type="text"
+            placeholder="Nombre del producto"
+          />
         </div>
         <div class="form-group">
           <label>Precio (€)</label>
-          <input v-model="editingProducto.precio" type="number" step="0.01" min="0" placeholder="0.00" />
+          <input
+            v-model="editingProducto.precio"
+            type="text"
+            inputmode="decimal"
+            placeholder="0,00"
+          />
         </div>
         <div class="form-group">
           <label>Categoría</label>
           <select v-model="editingProducto.categoria">
-            <option v-for="categoria in categoriasProducto" :key="categoria" :value="categoria">
+            <option
+              v-for="categoria in categoriasProducto"
+              :key="categoria"
+              :value="categoria"
+            >
               {{ categoria }}
             </option>
           </select>
         </div>
         <div class="form-group">
           <label>Descripción</label>
-          <textarea v-model="editingProducto.descripcion" placeholder="Descripción del producto..." rows="3"></textarea>
+          <textarea
+            v-model="editingProducto.descripcion"
+            placeholder="Descripción del producto..."
+            rows="3"
+          ></textarea>
         </div>
         <div class="form-group">
           <label>Disponible</label>
@@ -216,18 +354,44 @@
         <div class="form-group">
           <label>Imagen del producto</label>
           <div class="img-upload-area">
-            <img v-if="editingProducto.imagen_url" :src="editingProducto.imagen_url" class="img-preview" />
+            <img
+              v-if="editingProducto.imagen_url"
+              :src="editingProducto.imagen_url"
+              class="img-preview"
+            />
             <div v-else class="img-placeholder">📷 Sin imagen</div>
-            <input type="file" accept="image/*" @change="onImageSelected" class="file-input" ref="fileInputRef" />
-            <button type="button" class="btn-upload" @click="fileInputRef.click()" :disabled="uploadingImage">
-              {{ uploadingImage ? 'Subiendo…' : '📤 Seleccionar imagen' }}
+            <input
+              type="file"
+              accept="image/*"
+              @change="onImageSelected"
+              class="file-input"
+              ref="fileInputRef"
+            />
+            <button
+              type="button"
+              class="btn-upload"
+              @click="fileInputRef.click()"
+              :disabled="uploadingImage"
+            >
+              {{ uploadingImage ? "Subiendo…" : "📤 Seleccionar imagen" }}
             </button>
-            <button v-if="editingProducto.imagen_url" type="button" class="btn-remove-img" @click="editingProducto.imagen_url = ''">✕ Quitar imagen</button>
+            <button
+              v-if="editingProducto.imagen_url"
+              type="button"
+              class="btn-remove-img"
+              @click="editingProducto.imagen_url = ''"
+            >
+              ✕ Quitar imagen
+            </button>
           </div>
         </div>
         <div class="modal-actions">
-          <button class="btn-cancel" @click="modalProducto = false">Cancelar</button>
-          <button class="btn-save" @click="saveProducto">Guardar en Base de Datos</button>
+          <button class="btn-cancel" @click="modalProducto = false">
+            Cancelar
+          </button>
+          <button class="btn-save" @click="saveProducto">
+            Guardar en Base de Datos
+          </button>
         </div>
       </div>
     </div>
@@ -237,7 +401,13 @@
     ═══════════════════════════════════ -->
     <div v-if="modalMesa" class="modal-overlay" @click.self="modalMesa = false">
       <div class="modal">
-        <h2>{{ editingMesa.idMesa ? 'Editar Mesa #' + editingMesa.idMesa : 'Nueva Mesa' }}</h2>
+        <h2>
+          {{
+            editingMesa.idMesa
+              ? "Editar Mesa #" + editingMesa.idMesa
+              : "Nueva Mesa"
+          }}
+        </h2>
         <div class="form-group">
           <label>Capacidad (personas)</label>
           <input v-model="editingMesa.capacidad" type="number" min="1" />
@@ -245,7 +415,11 @@
         <div class="form-group">
           <label>Ubicación</label>
           <select v-model="editingMesa.ubicacion">
-            <option v-for="ubicacion in ubicacionesMesa" :key="ubicacion" :value="ubicacion">
+            <option
+              v-for="ubicacion in ubicacionesMesa"
+              :key="ubicacion"
+              :value="ubicacion"
+            >
               {{ ubicacion }}
             </option>
           </select>
@@ -258,8 +432,12 @@
           </select>
         </div>
         <div class="modal-actions">
-          <button class="btn-cancel" @click="modalMesa = false">Cancelar</button>
-          <button class="btn-save" @click="saveMesa">Guardar en Base de Datos</button>
+          <button class="btn-cancel" @click="modalMesa = false">
+            Cancelar
+          </button>
+          <button class="btn-save" @click="saveMesa">
+            Guardar en Base de Datos
+          </button>
         </div>
       </div>
     </div>
@@ -267,12 +445,27 @@
     <!-- ═══════════════════════════════════
          MODAL EDITAR / CREAR RESERVA
     ═══════════════════════════════════ -->
-    <div v-if="modalReserva" class="modal-overlay" @click.self="modalReserva = false">
+    <div
+      v-if="modalReserva"
+      class="modal-overlay"
+      @click.self="modalReserva = false"
+    >
       <div class="modal">
-        <h2>{{ editingReserva.idReserva ? 'Editar Reserva #' + editingReserva.idReserva : 'Nueva Reserva' }}</h2>
+        <h2>
+          {{
+            editingReserva.idReserva
+              ? "Editar Reserva #" + editingReserva.idReserva
+              : "Nueva Reserva"
+          }}
+        </h2>
         <div class="form-group">
           <label>ID Mesa</label>
-          <input v-model="editingReserva.idMesa" type="number" min="1" placeholder="Número de mesa" />
+          <input
+            v-model="editingReserva.idMesa"
+            type="number"
+            min="1"
+            placeholder="Número de mesa"
+          />
         </div>
         <div class="form-group">
           <label>Fecha</label>
@@ -284,11 +477,22 @@
         </div>
         <div class="form-group">
           <label>Número de personas</label>
-          <input v-model="editingReserva.numPersonas" type="number" min="1" placeholder="Pax" />
+          <input
+            v-model="editingReserva.numPersonas"
+            type="number"
+            min="1"
+            placeholder="Pax"
+          />
         </div>
         <div class="form-group">
           <label>Fianza (€)</label>
-          <input v-model="editingReserva.fianza" type="number" step="0.01" min="0" placeholder="0.00" />
+          <input
+            v-model="editingReserva.fianza"
+            type="number"
+            step="0.01"
+            min="0"
+            placeholder="0.00"
+          />
         </div>
         <div class="form-group">
           <label>Estado de pago</label>
@@ -299,8 +503,12 @@
           </select>
         </div>
         <div class="modal-actions">
-          <button class="btn-cancel" @click="modalReserva = false">Cancelar</button>
-          <button class="btn-save" @click="saveReserva">Guardar en Base de Datos</button>
+          <button class="btn-cancel" @click="modalReserva = false">
+            Cancelar
+          </button>
+          <button class="btn-save" @click="saveReserva">
+            Guardar en Base de Datos
+          </button>
         </div>
       </div>
     </div>
@@ -312,10 +520,17 @@
       <div class="modal modal-sm">
         <div class="delete-icon">🗑️</div>
         <h2>¿Estás seguro?</h2>
-        <p>Esta acción eliminará el registro permanentemente de la base de datos y no se puede deshacer.</p>
+        <p>
+          Esta acción eliminará el registro permanentemente de la base de datos
+          y no se puede deshacer.
+        </p>
         <div class="modal-actions">
-          <button class="btn-cancel" @click="deleteConfirm.show = false">No, cancelar</button>
-          <button class="btn-delete-confirm" @click="executeDelete">Sí, eliminar</button>
+          <button class="btn-cancel" @click="deleteConfirm.show = false">
+            No, cancelar
+          </button>
+          <button class="btn-delete-confirm" @click="executeDelete">
+            Sí, eliminar
+          </button>
         </div>
       </div>
     </div>
@@ -336,10 +551,32 @@ import Cabecera from "./Cabecera.vue";
 import Footer from "./Footer.vue";
 import { API_BASE_URL as API } from "@/config/api";
 
-const categoriasProducto = ["Entrantes", "Carnes", "Pescados", "Postres", "Bebidas"];
+const categoriasProducto = [
+  "Entrantes",
+  "Carnes",
+  "Pescados",
+  "Postres",
+  "Bebidas",
+];
 const ubicacionesMesa = ["Interior", "Terraza"];
-const formatearPrecioParaApi = (precio) => Number(precio).toFixed(2).replace(".", ",");
 const productoSoportaImagenUrl = ref(false);
+
+const normalizarPrecio = (precio) => {
+  if (typeof precio === "number") return precio;
+
+  const precioLimpio = String(precio ?? "")
+    .trim()
+    .replace(/\s/g, "")
+    .replace(",", ".");
+
+  return Number(precioLimpio);
+};
+
+const formatPrecio = (precio) =>
+  `${normalizarPrecio(precio).toLocaleString("es-ES", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })} €`;
 
 // ── Supabase Storage ─────────────────────────────────────────
 const BUCKET = "productos-img";
@@ -349,7 +586,10 @@ const getSupabase = () => {
   if (_supabase) return _supabase;
   const url = import.meta.env.VITE_SUPABASE_URL;
   const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
-  if (!url || !key) throw new Error("Supabase no configurado: falta VITE_SUPABASE_URL o VITE_SUPABASE_ANON_KEY en el .env");
+  if (!url || !key)
+    throw new Error(
+      "Supabase no configurado: falta VITE_SUPABASE_URL o VITE_SUPABASE_ANON_KEY en el .env",
+    );
   _supabase = createClient(url, key);
   return _supabase;
 };
@@ -366,8 +606,8 @@ const onImageSelected = async (event) => {
     const ext = file.name.split(".").pop();
     const path = `productos/${Date.now()}.${ext}`;
     const { error: uploadError } = await supabase.storage
-        .from(BUCKET)
-        .upload(path, file, { upsert: true });
+      .from(BUCKET)
+      .upload(path, file, { upsert: true });
     if (uploadError) throw uploadError;
     const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
     editingProducto.value.imagen_url = data.publicUrl;
@@ -394,32 +634,34 @@ const tabTitles = {
   usuarios: "Gestión de Personal y Clientes",
   productos: "Carta de Productos",
   reservas: "Control de Reservas",
-  mesas: "Configuración de Salón"
+  mesas: "Configuración de Salón",
 };
 
 // Modales
-const modalUsuario  = ref(false);
+const modalUsuario = ref(false);
 const modalProducto = ref(false);
-const modalMesa     = ref(false);
-const modalReserva  = ref(false);
-const editingUsuario  = ref({});
+const modalMesa = ref(false);
+const modalReserva = ref(false);
+const editingUsuario = ref({});
 const editingProducto = ref({});
-const editingMesa     = ref({});
-const editingReserva  = ref({});
-const deleteConfirm   = ref({ show: false, type: "", id: null });
+const editingMesa = ref({});
+const editingReserva = ref({});
+const deleteConfirm = ref({ show: false, type: "", id: null });
 
 // Toast
 const toast = ref({ show: false, type: "success", msg: "" });
 const showToast = (msg, type = "success") => {
   toast.value = { show: true, type, msg };
-  setTimeout(() => { toast.value.show = false; }, 3000);
+  setTimeout(() => {
+    toast.value.show = false;
+  }, 3000);
 };
 
 // ─── CARGA DE DATOS ───────────────────────────────────
 const fetchApiList = async (entity, filter = "") => {
   const url = filter
-      ? `${API}/${entity}?$filter=${encodeURIComponent(filter)}`
-      : `${API}/${entity}`;
+    ? `${API}/${entity}?$filter=${encodeURIComponent(filter)}`
+    : `${API}/${entity}`;
   const res = await fetch(url);
   if (!res.ok) return [];
   const data = await res.json();
@@ -439,10 +681,10 @@ const normalizarFianza = (fianza, personas) => {
 };
 
 const formatFianza = (fianza, personas) =>
-    `${normalizarFianza(fianza, personas).toLocaleString("es-ES", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })} €`;
+  `${normalizarFianza(fianza, personas).toLocaleString("es-ES", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })} €`;
 
 const formatHora = (hora) => String(hora || "").substring(0, 5);
 
@@ -453,14 +695,14 @@ const cargarUsuariosConRolVisual = async () => {
       return res.json();
     }),
     fetch(`${API}/Administrador`).then((res) =>
-        res.ok ? res.json() : { value: [] },
+      res.ok ? res.json() : { value: [] },
     ),
   ]);
 
   const administradoresIds = new Set(
-      (administradoresData.value || administradoresData || []).map((a) =>
-          Number(a.idUsuario),
-      ),
+    (administradoresData.value || administradoresData || []).map((a) =>
+      Number(a.idUsuario),
+    ),
   );
 
   usuarios.value = (usuariosData.value || usuariosData || []).map((u) => ({
@@ -478,23 +720,28 @@ const refresh = async () => {
       return;
     }
 
-    const endpoint = currentTab.value === 'usuarios'  ? 'Usuario'  :
-        currentTab.value === 'productos' ? 'Producto' :
-            currentTab.value === 'reservas'  ? 'Reserva'  : 'Mesa';
+    const endpoint =
+      currentTab.value === "usuarios"
+        ? "Usuario"
+        : currentTab.value === "productos"
+          ? "Producto"
+          : currentTab.value === "reservas"
+            ? "Reserva"
+            : "Mesa";
 
     const res = await fetch(`${API}/${endpoint}`);
     if (!res.ok) throw new Error();
     const data = await res.json();
     const registros = data.value || data;
 
-    if (currentTab.value === 'productos') {
+    if (currentTab.value === "productos") {
       productos.value = registros;
       productoSoportaImagenUrl.value = registros.some((producto) =>
-          Object.prototype.hasOwnProperty.call(producto, "imagen_url")
+        Object.prototype.hasOwnProperty.call(producto, "imagen_url"),
       );
     }
-    if (currentTab.value === 'reservas')  reservas.value  = registros;
-    if (currentTab.value === 'mesas')     mesas.value     = registros;
+    if (currentTab.value === "reservas") reservas.value = registros;
+    if (currentTab.value === "mesas") mesas.value = registros;
   } catch {
     error.value = "Error al conectar con la API.";
   } finally {
@@ -518,7 +765,7 @@ const saveUsuario = async () => {
     const res = await fetch(`${API}/Usuario/idUsuario/${idUsuario}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nombre, apellido, rol: rolUsuario })
+      body: JSON.stringify({ nombre, apellido, rol: rolUsuario }),
     });
     if (!res.ok) throw new Error(await res.text());
 
@@ -535,32 +782,60 @@ const saveUsuario = async () => {
 
 // ─── PRODUCTOS ────────────────────────────────────────
 const openAddProducto = () => {
-  editingProducto.value = { nombre: "", precio: "", categoria: "Entrantes", descripcion: "", disponible: true, imagen_url: "" };
+  editingProducto.value = {
+    nombre: "",
+    precio: "",
+    categoria: "Entrantes",
+    descripcion: "",
+    disponible: true,
+    imagen_url: "",
+  };
   modalProducto.value = true;
 };
 
 const openEditProducto = (p) => {
+  const precioNormalizado = normalizarPrecio(p.precio);
   editingProducto.value = {
     ...p,
-    categoria: categoriasProducto.includes(p.categoria) ? p.categoria : "Entrantes",
+    precio: Number.isFinite(precioNormalizado)
+      ? precioNormalizado.toLocaleString("es-ES", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })
+      : "",
+    categoria: categoriasProducto.includes(p.categoria)
+      ? p.categoria
+      : "Entrantes",
   };
   modalProducto.value = true;
 };
 
 const saveProducto = async () => {
-  const { idProducto, nombre, precio, categoria, descripcion, disponible, imagen_url } = editingProducto.value;
-  const precioNumero = Number(precio);
-  if (!nombre?.trim() || !Number.isFinite(precioNumero) || !categoriasProducto.includes(categoria)) {
+  const {
+    idProducto,
+    nombre,
+    precio,
+    categoria,
+    descripcion,
+    disponible,
+    imagen_url,
+  } = editingProducto.value;
+  const precioNumero = normalizarPrecio(precio);
+  if (
+    !nombre?.trim() ||
+    !Number.isFinite(precioNumero) ||
+    !categoriasProducto.includes(categoria)
+  ) {
     showToast("Revisa nombre, precio y categoría del producto.", "error");
     return;
   }
 
   const payload = {
     nombre: nombre.trim(),
-    precio: formatearPrecioParaApi(precioNumero),
+    precio: Number(precioNumero.toFixed(2)),
     categoria,
     descripcion: descripcion || null,
-    disponible: disponible === true || disponible === "true"
+    disponible: disponible === true || disponible === "true",
   };
 
   if (productoSoportaImagenUrl.value) {
@@ -568,12 +843,14 @@ const saveProducto = async () => {
   }
 
   try {
-    const url    = idProducto ? `${API}/Producto/idProducto/${idProducto}` : `${API}/Producto`;
+    const url = idProducto
+      ? `${API}/Producto/idProducto/${idProducto}`
+      : `${API}/Producto`;
     const method = idProducto ? "PATCH" : "POST";
     const res = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     });
     if (!res.ok) {
       const detalle = await res.text();
@@ -582,7 +859,10 @@ const saveProducto = async () => {
     }
     modalProducto.value = false;
     if (imagen_url && !productoSoportaImagenUrl.value) {
-      showToast("Producto guardado, pero falta activar imagen_url en la API.", "error");
+      showToast(
+        "Producto guardado, pero falta activar imagen_url en la API.",
+        "error",
+      );
     } else {
       showToast(idProducto ? "Producto actualizado." : "Producto creado.");
     }
@@ -608,15 +888,15 @@ const saveMesa = async () => {
   const payload = {
     capacidad: parseInt(capacidad),
     ubicacion,
-    disponible: disponible === true || disponible === "true"
+    disponible: disponible === true || disponible === "true",
   };
   try {
-    const url    = idMesa ? `${API}/Mesa/idMesa/${idMesa}` : `${API}/Mesa`;
+    const url = idMesa ? `${API}/Mesa/idMesa/${idMesa}` : `${API}/Mesa`;
     const method = idMesa ? "PATCH" : "POST";
     const res = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error();
     modalMesa.value = false;
@@ -629,7 +909,14 @@ const saveMesa = async () => {
 
 // ─── RESERVAS ─────────────────────────────────────────
 const openAddReserva = () => {
-  editingReserva.value = { idMesa: "", fecha: "", hora: "", numPersonas: 1, fianza: 0, estadoPago: "pendiente" };
+  editingReserva.value = {
+    idMesa: "",
+    fecha: "",
+    hora: "",
+    numPersonas: 1,
+    fianza: 0,
+    estadoPago: "pendiente",
+  };
   modalReserva.value = true;
 };
 
@@ -639,22 +926,25 @@ const openEditReserva = (r) => {
 };
 
 const saveReserva = async () => {
-  const { idReserva, idMesa, fecha, hora, numPersonas, fianza, estadoPago } = editingReserva.value;
+  const { idReserva, idMesa, fecha, hora, numPersonas, fianza, estadoPago } =
+    editingReserva.value;
   const payload = {
     idMesa: parseInt(idMesa),
     fecha,
     hora,
     numPersonas: parseInt(numPersonas),
     fianza: parseFloat(fianza),
-    estadoPago
+    estadoPago,
   };
   try {
-    const url    = idReserva ? `${API}/Reserva/idReserva/${idReserva}` : `${API}/Reserva`;
+    const url = idReserva
+      ? `${API}/Reserva/idReserva/${idReserva}`
+      : `${API}/Reserva`;
     const method = idReserva ? "PATCH" : "POST";
     const res = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error();
     modalReserva.value = false;
@@ -702,15 +992,26 @@ const ensureEmpleado = async (idUsuario, puesto = "mesero") => {
     return;
   }
 
-  await postApi(`${API}/Empleado`, { idUsuario: id, puesto }, { ignoreConflict: true });
+  await postApi(
+    `${API}/Empleado`,
+    { idUsuario: id, puesto },
+    { ignoreConflict: true },
+  );
 };
 
 const ensureAdministrador = async (idUsuario) => {
   const id = Number(idUsuario);
-  const administrador = await fetchApiList("Administrador", `idUsuario eq ${id}`);
+  const administrador = await fetchApiList(
+    "Administrador",
+    `idUsuario eq ${id}`,
+  );
 
   if (!administrador.length) {
-    await postApi(`${API}/Administrador`, { idUsuario: id }, { ignoreConflict: true });
+    await postApi(
+      `${API}/Administrador`,
+      { idUsuario: id },
+      { ignoreConflict: true },
+    );
   }
 };
 
@@ -724,18 +1025,28 @@ const syncUsuarioRol = async (idUsuario, rolVisual) => {
   }
 
   if (rolVisual === "empleado") {
-    await deleteApi(`${API}/Administrador/idUsuario/${id}`, { ignoreNotFound: true });
+    await deleteApi(`${API}/Administrador/idUsuario/${id}`, {
+      ignoreNotFound: true,
+    });
     await ensureEmpleado(id, "mesero");
     return;
   }
 
   if (rolVisual === "cliente") {
-    await deleteApi(`${API}/Administrador/idUsuario/${id}`, { ignoreNotFound: true });
-    await deleteApi(`${API}/Empleado/idUsuario/${id}`, { ignoreNotFound: true });
+    await deleteApi(`${API}/Administrador/idUsuario/${id}`, {
+      ignoreNotFound: true,
+    });
+    await deleteApi(`${API}/Empleado/idUsuario/${id}`, {
+      ignoreNotFound: true,
+    });
 
     const cliente = await fetchApiList("Cliente", `idUsuario eq ${id}`);
     if (!cliente.length) {
-      await postApi(`${API}/Cliente`, { idUsuario: id }, { ignoreConflict: true });
+      await postApi(
+        `${API}/Cliente`,
+        { idUsuario: id },
+        { ignoreConflict: true },
+      );
     }
   }
 };
@@ -747,13 +1058,15 @@ const confirmDelete = (type, id) => {
 const executeDelete = async () => {
   const { type, id } = deleteConfirm.value;
   const endpointMap = {
-    usuario:  "Usuario/idUsuario",
+    usuario: "Usuario/idUsuario",
     producto: "Producto/idProducto",
-    reserva:  "Reserva/idReserva",
-    mesa:     "Mesa/idMesa"
+    reserva: "Reserva/idReserva",
+    mesa: "Mesa/idMesa",
   };
   try {
-    const res = await fetch(`${API}/${endpointMap[type]}/${id}`, { method: "DELETE" });
+    const res = await fetch(`${API}/${endpointMap[type]}/${id}`, {
+      method: "DELETE",
+    });
     if (!res.ok) throw new Error();
     deleteConfirm.value.show = false;
     showToast("Registro eliminado correctamente.");
@@ -783,7 +1096,9 @@ const handleLogout = () => {
   background: #1a1410 !important;
 }
 
-.admin-container { all: initial; }
+.admin-container {
+  all: initial;
+}
 
 .admin-container,
 .admin-container * {
@@ -884,7 +1199,6 @@ const handleLogout = () => {
 }
 
 .sidebar-nav button:hover:not(.active) {
-
   color: #f5f0e8 !important;
   padding-left: 30px !important; /* Efecto sutil de desplazamiento al entrar */
 }
@@ -897,7 +1211,7 @@ const handleLogout = () => {
   width: 100% !important;
   flex-shrink: 0 !important;
   background: transparent !important;
-  border: 1px solid rgba(255,255,255,0.12) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
   color: #888 !important;
   padding: 10px !important;
   border-radius: 7px !important;
@@ -909,9 +1223,9 @@ const handleLogout = () => {
   transition: all 0.2s !important;
 }
 .btn-logout:hover {
-  background: rgba(211,47,47,0.15) !important;
+  background: rgba(211, 47, 47, 0.15) !important;
   color: #ef9a9a !important;
-  border-color: rgba(211,47,47,0.4) !important;
+  border-color: rgba(211, 47, 47, 0.4) !important;
 }
 
 /* ── MAIN ── */
@@ -953,18 +1267,22 @@ const handleLogout = () => {
   cursor: pointer !important;
   white-space: nowrap !important;
 }
-.btn-add:hover { background: #b8852e !important; }
+.btn-add:hover {
+  background: #b8852e !important;
+}
 
 /* ── CARD + TABLA ── */
 .admin-card {
   background: white !important;
   border-radius: 10px !important;
   border: 1px solid #f0ebe4 !important;
-  box-shadow: 0 4px 25px rgba(0,0,0,0.04) !important;
+  box-shadow: 0 4px 25px rgba(0, 0, 0, 0.04) !important;
   overflow: hidden !important;
 }
 
-.table-wrapper { overflow-x: auto !important; }
+.table-wrapper {
+  overflow-x: auto !important;
+}
 
 table {
   width: 100% !important;
@@ -972,7 +1290,9 @@ table {
   min-width: 580px !important;
 }
 
-thead tr { background: #fcfaf8 !important; }
+thead tr {
+  background: #fcfaf8 !important;
+}
 
 th {
   padding: 0.9rem 1.2rem !important;
@@ -994,8 +1314,12 @@ td {
   vertical-align: middle !important;
 }
 
-tbody tr:last-child td { border-bottom: none !important; }
-tbody tr:hover { background: #fdfaf7 !important; }
+tbody tr:last-child td {
+  border-bottom: none !important;
+}
+tbody tr:hover {
+  background: #fdfaf7 !important;
+}
 
 .td-desc {
   max-width: 200px !important;
@@ -1012,14 +1336,38 @@ tbody tr:hover { background: #fdfaf7 !important; }
   font-size: 0.72rem !important;
   font-weight: 600 !important;
 }
-.badge.disponible   { background: #e8f5e9 !important; color: #2e7d32 !important; }
-.badge.nodisponible { background: #ffebee !important; color: #c62828 !important; }
-.badge.admin        { background: #fff1f1 !important; color: #d32f2f !important; }
-.badge.empleado     { background: #e3f2fd !important; color: #1565c0 !important; }
-.badge.cliente      { background: #f3e5f5 !important; color: #6a1b9a !important; }
-.badge.pendiente    { background: #fff8e1 !important; color: #e65100 !important; }
-.badge.pagado       { background: #e8f5e9 !important; color: #2e7d32 !important; }
-.badge.cancelado    { background: #ffebee !important; color: #c62828 !important; }
+.badge.disponible {
+  background: #e8f5e9 !important;
+  color: #2e7d32 !important;
+}
+.badge.nodisponible {
+  background: #ffebee !important;
+  color: #c62828 !important;
+}
+.badge.admin {
+  background: #fff1f1 !important;
+  color: #d32f2f !important;
+}
+.badge.empleado {
+  background: #e3f2fd !important;
+  color: #1565c0 !important;
+}
+.badge.cliente {
+  background: #f3e5f5 !important;
+  color: #6a1b9a !important;
+}
+.badge.pendiente {
+  background: #fff8e1 !important;
+  color: #e65100 !important;
+}
+.badge.pagado {
+  background: #e8f5e9 !important;
+  color: #2e7d32 !important;
+}
+.badge.cancelado {
+  background: #ffebee !important;
+  color: #c62828 !important;
+}
 
 /* ── ACCIONES ── */
 .actions {
@@ -1043,8 +1391,16 @@ tbody tr:hover { background: #fdfaf7 !important; }
   background: #f8f6f3 !important;
   color: #5a5040 !important;
 }
-.btn-edit:hover   { background: #eef2ff !important; color: #3f51b5 !important; border-color: #c5cae9 !important; }
-.btn-delete:hover { background: #fff0f0 !important; color: #d32f2f !important; border-color: #ffcdd2 !important; }
+.btn-edit:hover {
+  background: #eef2ff !important;
+  color: #3f51b5 !important;
+  border-color: #c5cae9 !important;
+}
+.btn-delete:hover {
+  background: #fff0f0 !important;
+  color: #d32f2f !important;
+  border-color: #ffcdd2 !important;
+}
 
 /* ── MENSAJES ── */
 .state-msg {
@@ -1053,13 +1409,15 @@ tbody tr:hover { background: #fdfaf7 !important; }
   color: #8a735a !important;
   font-size: 0.95rem !important;
 }
-.state-msg.error { color: #d32f2f !important; }
+.state-msg.error {
+  color: #d32f2f !important;
+}
 
 /* ── MODALES ── */
 .modal-overlay {
   position: fixed !important;
   inset: 0 !important;
-  background: rgba(20,14,10,0.7) !important;
+  background: rgba(20, 14, 10, 0.7) !important;
   backdrop-filter: blur(3px) !important;
   display: flex !important;
   align-items: center !important;
@@ -1075,7 +1433,7 @@ tbody tr:hover { background: #fdfaf7 !important; }
   max-width: 460px !important;
   max-height: 90vh !important;
   overflow-y: auto !important;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.2) !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2) !important;
 }
 
 .modal h2 {
@@ -1085,11 +1443,22 @@ tbody tr:hover { background: #fdfaf7 !important; }
   margin-bottom: 1.5rem !important;
 }
 
-.modal-sm { max-width: 380px !important; text-align: center !important; }
-.modal-sm p { color: #666 !important; margin-top: 0.4rem !important; font-size: 0.9rem !important; }
-.delete-icon { font-size: 2.5rem !important; }
+.modal-sm {
+  max-width: 380px !important;
+  text-align: center !important;
+}
+.modal-sm p {
+  color: #666 !important;
+  margin-top: 0.4rem !important;
+  font-size: 0.9rem !important;
+}
+.delete-icon {
+  font-size: 2.5rem !important;
+}
 
-.form-group { margin-bottom: 1.2rem !important; }
+.form-group {
+  margin-bottom: 1.2rem !important;
+}
 
 .form-group label {
   display: block !important;
@@ -1119,11 +1488,17 @@ tbody tr:hover { background: #fdfaf7 !important; }
 .form-group textarea:focus {
   outline: none !important;
   border-color: #c9963a !important;
-  box-shadow: 0 0 0 3px rgba(201,150,58,0.1) !important;
+  box-shadow: 0 0 0 3px rgba(201, 150, 58, 0.1) !important;
 }
 
-.form-group textarea { resize: vertical !important; }
-.input-disabled { background: #f5f5f5 !important; color: #999 !important; cursor: not-allowed !important; }
+.form-group textarea {
+  resize: vertical !important;
+}
+.input-disabled {
+  background: #f5f5f5 !important;
+  color: #999 !important;
+  cursor: not-allowed !important;
+}
 
 .modal-actions {
   display: flex !important;
@@ -1143,7 +1518,9 @@ tbody tr:hover { background: #fdfaf7 !important; }
   font-size: 0.88rem !important;
   color: #555 !important;
 }
-.btn-cancel:hover { background: #ede8df !important; }
+.btn-cancel:hover {
+  background: #ede8df !important;
+}
 
 .btn-save {
   all: unset !important;
@@ -1157,7 +1534,9 @@ tbody tr:hover { background: #fdfaf7 !important; }
   font-weight: 600 !important;
   font-size: 0.88rem !important;
 }
-.btn-save:hover { background: #b8852e !important; }
+.btn-save:hover {
+  background: #b8852e !important;
+}
 
 .btn-delete-confirm {
   all: unset !important;
@@ -1171,7 +1550,9 @@ tbody tr:hover { background: #fdfaf7 !important; }
   font-weight: 600 !important;
   font-size: 0.88rem !important;
 }
-.btn-delete-confirm:hover { background: #b71c1c !important; }
+.btn-delete-confirm:hover {
+  background: #b71c1c !important;
+}
 
 /* ── TOAST ── */
 .toast {
@@ -1184,30 +1565,105 @@ tbody tr:hover { background: #fdfaf7 !important; }
   font-size: 0.9rem !important;
   font-weight: 600 !important;
   z-index: 99999 !important;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.15) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15) !important;
   animation: slideIn 0.3s ease !important;
 }
-.toast.success { background: #2e7d32 !important; color: white !important; }
-.toast.error   { background: #c62828 !important; color: white !important; }
+.toast.success {
+  background: #2e7d32 !important;
+  color: white !important;
+}
+.toast.error {
+  background: #c62828 !important;
+  color: white !important;
+}
 
 @keyframes slideIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 /* ── IMAGEN PRODUCTO (tabla) ── */
-.td-img { width: 60px !important; padding: 6px 10px !important; }
-.thumb { width: 48px !important; height: 48px !important; object-fit: cover !important; border-radius: 6px !important; border: 1px solid #e8e3dc !important; }
-.no-img { font-size: 0.78rem !important; color: #bbb !important; }
+.td-img {
+  width: 60px !important;
+  padding: 6px 10px !important;
+}
+.thumb {
+  width: 48px !important;
+  height: 48px !important;
+  object-fit: cover !important;
+  border-radius: 6px !important;
+  border: 1px solid #e8e3dc !important;
+}
+.no-img {
+  font-size: 0.78rem !important;
+  color: #bbb !important;
+}
 
 /* ── UPLOAD AREA ── */
-.img-upload-area { display: flex !important; flex-direction: column !important; align-items: flex-start !important; gap: 10px !important; }
-.img-preview { width: 100% !important; max-height: 180px !important; object-fit: cover !important; border-radius: 8px !important; border: 1px solid #ddd !important; }
-.img-placeholder { width: 100% !important; height: 100px !important; background: #f8f6f3 !important; border: 2px dashed #d9cec3 !important; border-radius: 8px !important; display: flex !important; align-items: center !important; justify-content: center !important; font-size: 0.85rem !important; color: #a89880 !important; }
-.file-input { display: none !important; }
-.btn-upload { all: unset !important; box-sizing: border-box !important; background: #f0ebe4 !important; border: 1px solid #d9cec3 !important; color: #5a5040 !important; padding: 8px 16px !important; border-radius: 6px !important; cursor: pointer !important; font-family: "Montserrat", sans-serif !important; font-size: 0.82rem !important; font-weight: 600 !important; transition: background 0.2s !important; }
-.btn-upload:hover:not(:disabled) { background: #e4dcd2 !important; }
-.btn-upload:disabled { opacity: 0.6 !important; cursor: not-allowed !important; }
-.btn-remove-img { all: unset !important; box-sizing: border-box !important; color: #d32f2f !important; font-size: 0.78rem !important; cursor: pointer !important; font-family: "Montserrat", sans-serif !important; font-weight: 600 !important; }
-.btn-remove-img:hover { text-decoration: underline !important; }
-
+.img-upload-area {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 10px !important;
+}
+.img-preview {
+  width: 100% !important;
+  max-height: 180px !important;
+  object-fit: cover !important;
+  border-radius: 8px !important;
+  border: 1px solid #ddd !important;
+}
+.img-placeholder {
+  width: 100% !important;
+  height: 100px !important;
+  background: #f8f6f3 !important;
+  border: 2px dashed #d9cec3 !important;
+  border-radius: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 0.85rem !important;
+  color: #a89880 !important;
+}
+.file-input {
+  display: none !important;
+}
+.btn-upload {
+  all: unset !important;
+  box-sizing: border-box !important;
+  background: #f0ebe4 !important;
+  border: 1px solid #d9cec3 !important;
+  color: #5a5040 !important;
+  padding: 8px 16px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  font-family: "Montserrat", sans-serif !important;
+  font-size: 0.82rem !important;
+  font-weight: 600 !important;
+  transition: background 0.2s !important;
+}
+.btn-upload:hover:not(:disabled) {
+  background: #e4dcd2 !important;
+}
+.btn-upload:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+}
+.btn-remove-img {
+  all: unset !important;
+  box-sizing: border-box !important;
+  color: #d32f2f !important;
+  font-size: 0.78rem !important;
+  cursor: pointer !important;
+  font-family: "Montserrat", sans-serif !important;
+  font-weight: 600 !important;
+}
+.btn-remove-img:hover {
+  text-decoration: underline !important;
+}
 </style>
