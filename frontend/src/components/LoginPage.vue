@@ -3,6 +3,7 @@ import { Icon } from "@iconify/vue";
 import { ref } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import { apiUrl } from "@/config/api";
+import { getUserDbEmail, getUserDisplayName } from "@/config/authUser";
 import {
   getAuth,
   signInWithEmailAndPassword,
@@ -85,6 +86,13 @@ async function loginSocial(ProviderClass) {
 
     // Intenta insertar — si ya existe (409), el servidor lo ignora
     await saveUserToDb(user.displayName || "", user.email, user.uid);
+    router.push(destinoTrasLogin());
+    // Intenta insertar — si ya existe (409), el servidor lo ignora
+    const dbEmail = getUserDbEmail(user);
+    if (!dbEmail)
+      throw new Error("No se pudo obtener un identificador del usuario");
+
+    await saveUserToDb(getUserDisplayName(user), dbEmail, user.uid);
     router.push(destinoTrasLogin());
   } catch (e) {
     console.error("loginSocial error:", e.code, e.message);

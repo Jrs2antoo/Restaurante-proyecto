@@ -64,6 +64,7 @@
         <div v-if="loading" class="state-msg">
           Conectando con la base de datos...
         </div>
+
         <div v-else-if="error" class="state-msg error">{{ error }}</div>
 
         <div v-else class="admin-card table-wrapper">
@@ -559,6 +560,24 @@ const categoriasProducto = [
   "Bebidas",
 ];
 const ubicacionesMesa = ["Interior", "Terraza"];
+const parsePrecio = (precio) => {
+  const text = String(precio ?? "").trim();
+  const normalized = text.includes(",")
+    ? text.replace(/\./g, "").replace(",", ".")
+    : text;
+  return Number(normalized);
+};
+const normalizarPrecioProducto = (precio) => {
+  const value = Number(precio);
+  if (!Number.isFinite(value)) return 0;
+  return value >= 100 ? value / 100 : value;
+};
+const formatPrecio = (precio) =>
+  `${normalizarPrecioProducto(precio).toLocaleString("es-ES", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}€`;
+const formatearPrecioParaApi = (precio) => Number(precio.toFixed(2));
 const productoSoportaImagenUrl = ref(false);
 
 const normalizarPrecio = (precio) => {
@@ -571,12 +590,6 @@ const normalizarPrecio = (precio) => {
 
   return Number(precioLimpio);
 };
-
-const formatPrecio = (precio) =>
-  `${normalizarPrecio(precio).toLocaleString("es-ES", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })} €`;
 
 // ── Supabase Storage ─────────────────────────────────────────
 const BUCKET = "productos-img";
@@ -794,15 +807,9 @@ const openAddProducto = () => {
 };
 
 const openEditProducto = (p) => {
-  const precioNormalizado = normalizarPrecio(p.precio);
   editingProducto.value = {
     ...p,
-    precio: Number.isFinite(precioNormalizado)
-      ? precioNormalizado.toLocaleString("es-ES", {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        })
-      : "",
+    precio: normalizarPrecioProducto(p.precio).toFixed(2),
     categoria: categoriasProducto.includes(p.categoria)
       ? p.categoria
       : "Entrantes",
@@ -820,7 +827,7 @@ const saveProducto = async () => {
     disponible,
     imagen_url,
   } = editingProducto.value;
-  const precioNumero = normalizarPrecio(precio);
+  const precioNumero = parsePrecio(precio);
   if (
     !nombre?.trim() ||
     !Number.isFinite(precioNumero) ||

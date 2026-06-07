@@ -218,6 +218,7 @@
 import { ref, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { apiUrl } from "@/config/api";
+import { getUserDbEmail, getUserDisplayName } from "@/config/authUser";
 import {
   getAuth,
   createUserWithEmailAndPassword,
@@ -354,6 +355,12 @@ async function handleSocial(ProviderClass) {
     }
 
     await saveUserToDb(user.displayName || "", user.email, user.uid);
+    router.push(destinoTrasRegistro());
+    const dbEmail = getUserDbEmail(user);
+    if (!dbEmail)
+      throw new Error("No se pudo obtener un identificador del usuario");
+
+    await saveUserToDb(getUserDisplayName(user), dbEmail, user.uid);
     router.push(destinoTrasRegistro());
   } catch (err) {
     console.error("handleSocial error:", err.code, err.message);
