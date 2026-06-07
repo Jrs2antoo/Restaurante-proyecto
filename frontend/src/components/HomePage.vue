@@ -1,28 +1,7 @@
 <template>
   <div id="app">
     <!-- NAVBAR -->
-    <nav :class="{ scrolled: isScrolled }">
-      <RouterLink to="/" class="nav-logo">La <span>Brasa</span></RouterLink>
-      <ul class="nav-links">
-        <li><RouterLink to="/">Inicio</RouterLink></li>
-        <li><RouterLink to="/catalogo">Menú</RouterLink></li>
-        <li><RouterLink to="/reservas">Reservas</RouterLink></li>
-        <li v-if="!usuarioActual">
-          <RouterLink to="/login" class="nav-btn">Iniciar Sesión</RouterLink>
-        </li>
-        <li v-else class="nav-user-menu">
-          <button class="nav-user-btn" @click="toggleMenu">
-            <span class="nav-user-avatar">{{ inicialUsuario }}</span>
-            <span class="nav-user-name">{{ nombreUsuario }}</span>
-            <span class="nav-user-chevron" :class="{ open: menuAbierto }">▾</span>
-          </button>
-          <div v-if="menuAbierto" class="nav-dropdown">
-            <RouterLink v-if="esAdmin" to="/administracion" class="nav-dropdown-item" @click="menuAbierto = false">⚙️ Administración</RouterLink>
-            <button class="nav-dropdown-item nav-logout" @click="cerrarSesion">🚪 Cerrar sesión</button>
-          </div>
-        </li>
-      </ul>
-    </nav>
+    <Cabecera />
 
     <!-- HERO -->
     <section class="hero">
@@ -38,10 +17,6 @@
           Producto local, fuego lento y una mesa que siempre te espera.
         </p>
         <RouterLink to="/reservas" class="hero-cta">Reservar mesa</RouterLink>
-      </div>
-      <div class="hero-scroll">
-        <div class="hero-scroll-line"></div>
-        <span>Descubrir</span>
       </div>
     </section>
 
@@ -91,36 +66,36 @@
       <div class="gallery-grid reveal" style="transition-delay: 0.1s">
         <div class="gallery-item g1">
           <img
-              src="https://images.unsplash.com/photo-1552566626-52f8b828add9?w=900&auto=format&fit=crop&q=80"
-              alt="Sala principal del restaurante"
+            src="https://images.unsplash.com/photo-1552566626-52f8b828add9?w=900&auto=format&fit=crop&q=80"
+            alt="Sala principal del restaurante"
           />
           <div class="gallery-overlay"><span>Sala principal</span></div>
         </div>
         <div class="gallery-item g2">
           <img
-              src="https://images.unsplash.com/photo-1600891964092-4316c288032e?w=600&auto=format&fit=crop&q=80"
-              alt="Plato estrella"
+            src="https://images.unsplash.com/photo-1600891964092-4316c288032e?w=600&auto=format&fit=crop&q=80"
+            alt="Plato estrella"
           />
           <div class="gallery-overlay"><span>Plato estrella</span></div>
         </div>
         <div class="gallery-item g3">
           <img
-              src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=700&auto=format&fit=crop&q=80"
-              alt="Interior acogedor"
+            src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=700&auto=format&fit=crop&q=80"
+            alt="Interior acogedor"
           />
           <div class="gallery-overlay"><span>Interior</span></div>
         </div>
         <div class="gallery-item g4">
           <img
-              src="https://images.unsplash.com/photo-1559339352-11d035aa65de?w=600&auto=format&fit=crop&q=80"
-              alt="Barra y coctelería"
+            src="https://images.unsplash.com/photo-1559339352-11d035aa65de?w=600&auto=format&fit=crop&q=80"
+            alt="Barra y coctelería"
           />
           <div class="gallery-overlay"><span>Barra</span></div>
         </div>
         <div class="gallery-item g5">
           <img
-              src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=900&auto=format&fit=crop&q=80"
-              alt="Alta cocina"
+            src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=900&auto=format&fit=crop&q=80"
+            alt="Alta cocina"
           />
           <div class="gallery-overlay"><span>Alta cocina</span></div>
         </div>
@@ -128,59 +103,15 @@
     </section>
 
     <!-- FOOTER -->
-    <footer>
-      <div class="footer-logo">La <span>Brasa</span></div>
-      <p class="footer-copy">© 2026 La Brasa Restaurante · Granada</p>
-    </footer>
+    <Footer />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from "vue";
-import { RouterLink, useRouter } from "vue-router";
-import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
-
-const router = useRouter();
-const auth = getAuth();
-
-const isScrolled = ref(false);
-const usuarioActual = ref(null);
-const menuAbierto = ref(false);
-
-const ADMIN_ID = "0zqRdP39nXRgH7Cl3ukyjEqEy6v2";
-
-const esAdmin = computed(() => usuarioActual.value?.uid === ADMIN_ID);
-
-const nombreUsuario = computed(() => {
-  const u = usuarioActual.value;
-  if (!u) return "";
-  return u.displayName || u.email?.split("@")[0] || "Usuario";
-});
-
-const inicialUsuario = computed(() => {
-  return nombreUsuario.value.charAt(0).toUpperCase();
-});
-
-const toggleMenu = () => {
-  menuAbierto.value = !menuAbierto.value;
-};
-
-const cerrarSesion = async () => {
-  menuAbierto.value = false;
-  await signOut(auth);
-  router.push("/login");
-};
-
-// Cerrar menú al hacer click fuera
-const handleClickFuera = (e) => {
-  if (!e.target.closest(".nav-user-menu")) {
-    menuAbierto.value = false;
-  }
-};
-
-let unsubscribeAuth = null;
-
-const isScrolled_ref = isScrolled;
+import { onMounted } from "vue";
+import { RouterLink } from "vue-router";
+import Cabecera from "./Cabecera.vue";
+import Footer from "./Footer.vue";
 
 const cards = [
   {
@@ -206,34 +137,19 @@ const cards = [
 ];
 
 onMounted(() => {
-  window.addEventListener("scroll", () => {
-    isScrolled_ref.value = window.scrollY > 40;
-  });
-
-  document.addEventListener("click", handleClickFuera);
-
-  unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-    usuarioActual.value = user;
-  });
-
   const revealEls = document.querySelectorAll(".reveal");
   const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) {
-            e.target.classList.add("visible");
-            io.unobserve(e.target);
-          }
-        });
-      },
-      { threshold: 0.12 },
+    (entries) => {
+      entries.forEach((e) => {
+        if (e.isIntersecting) {
+          e.target.classList.add("visible");
+          io.unobserve(e.target);
+        }
+      });
+    },
+    { threshold: 0.12 },
   );
   revealEls.forEach((el) => io.observe(el));
-});
-
-onUnmounted(() => {
-  document.removeEventListener("click", handleClickFuera);
-  if (unsubscribeAuth) unsubscribeAuth();
 });
 </script>
 
@@ -268,218 +184,11 @@ body {
   overflow-x: hidden;
 }
 
-/* ─── NAVBAR ─── */
-nav {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 5vw;
-  height: 72px;
-  transition:
-      background 0.4s,
-      box-shadow 0.4s;
-}
-nav.scrolled {
-  background: rgba(26, 20, 16, 0.96);
-  box-shadow: 0 2px 24px rgba(0, 0, 0, 0.3);
-}
-.nav-logo {
-  font-family: "Cormorant Garamond", serif;
-  font-size: 1.7rem;
-  font-weight: 600;
-  color: var(--cream);
-  letter-spacing: 0.06em;
-  text-decoration: none;
-}
-.nav-logo span {
-  color: var(--gold);
-  font-style: italic;
-}
-.nav-links {
-  display: flex;
-  gap: 2.4rem;
-  list-style: none;
-}
-.nav-links a {
-  font-size: 0.72rem;
-  font-weight: 500;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--cream);
-  text-decoration: none;
-  position: relative;
-  padding-bottom: 4px;
-  transition: color 0.3s;
-}
-.nav-links a::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 0;
-  height: 1px;
-  background: var(--gold);
-  transition: width 0.3s;
-}
-.nav-links a:hover {
-  color: var(--gold);
-}
-.nav-links a:hover::after {
-  width: 100%;
-}
-.nav-btn {
-  background: var(--gold) !important;
-  color: var(--dark) !important;
-  padding: 8px 22px !important;
-  border-radius: 2px;
-  font-weight: 600 !important;
-  transition:
-      background 0.3s,
-      transform 0.2s !important;
-}
-.nav-btn:hover {
-  background: #e0aa45 !important;
-  transform: translateY(-1px);
-}
-.nav-btn::after {
-  display: none !important;
-}
-
-/* ─── USER MENU ─── */
-.nav-user-menu {
-  position: relative;
-}
-
-.nav-user-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(26, 20, 16, 0.55);
-  border: 1.5px solid var(--gold);
-  border-radius: 999px;
-  padding: 6px 14px 6px 6px;
-  cursor: pointer;
-  color: #f5f0e8;
-  font-family: inherit;
-  font-size: 0.85rem;
-  font-weight: 500;
-  transition: background 0.2s, color 0.2s;
-}
-
-.nav-user-btn:hover {
-  background: var(--gold);
-  color: var(--dark);
-}
-
-.nav-user-avatar {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: var(--gold);
-  color: var(--dark);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 0.9rem;
-  flex-shrink: 0;
-}
-
-.nav-user-btn:hover .nav-user-avatar {
-  background: var(--dark);
-  color: var(--gold);
-}
-
-.nav-user-name {
-  color: #f5f0e8;
-  max-width: 120px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.nav-user-btn:hover .nav-user-name {
-  color: var(--dark);
-}
-
-.nav-user-chevron {
-  font-size: 0.75rem;
-  transition: transform 0.2s;
-  display: inline-block;
-  color: var(--gold);
-}
-
-.nav-user-btn:hover .nav-user-chevron {
-  color: var(--dark);
-}
-
-.nav-user-chevron.open {
-  transform: rotate(180deg);
-}
-
-.nav-dropdown {
-  position: absolute;
-  top: calc(100% + 12px);
-  right: 0;
-  background: #faf6ef;
-  border: 1px solid #d9cfc2;
-  border-radius: 12px;
-  box-shadow: 0 12px 32px rgba(0,0,0,0.22);
-  min-width: 200px;
-  overflow: hidden;
-  z-index: 200;
-}
-
-.nav-dropdown-item,
-.nav-dropdown a.nav-dropdown-item {
-  display: block;
-  width: 100%;
-  padding: 13px 20px;
-  font-size: 0.9rem;
-  color: #2d2520 !important;
-  text-decoration: none !important;
-  background: transparent;
-  border: none;
-  text-align: left;
-  font-family: inherit;
-  cursor: pointer;
-  transition: background 0.15s;
-  font-weight: 500;
-  letter-spacing: 0.01em;
-  opacity: 1 !important;
-}
-
-.nav-dropdown-item:hover,
-.nav-dropdown a.nav-dropdown-item:hover {
-  background: #ede5d8;
-  color: #1a1410 !important;
-}
-
-.nav-dropdown a.nav-dropdown-item::after {
-  display: none !important;
-}
-
-.nav-logout {
-  border-top: 1px solid #d9cfc2;
-  color: #c0392b;
-  font-weight: 600;
-}
-
-.nav-logout:hover {
-  background: #fdecea;
-  color: #a93226;
-}
-
 /* ─── HERO ─── */
 .hero {
   position: relative;
   height: 100vh;
-  min-height: 640px;
+  min-height: 720px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -489,7 +198,7 @@ nav.scrolled {
   position: absolute;
   inset: 0;
   background: url("https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1600&auto=format&fit=crop&q=80")
-  center/cover no-repeat;
+    center/cover no-repeat;
   transform: scale(1.08);
   animation: kenBurns 18s ease-in-out infinite alternate;
 }
@@ -504,18 +213,25 @@ nav.scrolled {
 .hero-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(
+  background:
+    radial-gradient(
+      circle at 50% 42%,
+      rgba(26, 20, 16, 0.18) 0%,
+      rgba(26, 20, 16, 0.62) 58%
+    ),
+    linear-gradient(
       160deg,
-      rgba(26, 20, 16, 0.72) 0%,
-      rgba(26, 20, 16, 0.45) 60%,
-      rgba(107, 76, 42, 0.3) 100%
-  );
+      rgba(12, 9, 7, 0.84) 0%,
+      rgba(26, 20, 16, 0.56) 54%,
+      rgba(12, 9, 7, 0.78) 100%
+    );
 }
 .hero-content {
   position: relative;
   text-align: center;
   color: var(--cream);
-  padding: 0 1.5rem;
+  padding: 96px 1.5rem 0;
+  max-width: 760px;
   animation: fadeUp 1.1s ease both;
 }
 @keyframes fadeUp {
@@ -532,31 +248,36 @@ nav.scrolled {
   font-size: 0.68rem;
   letter-spacing: 0.3em;
   text-transform: uppercase;
-  color: var(--gold);
-  margin-bottom: 1.2rem;
+  color: #f4c45c;
+  margin-bottom: 1rem;
+  font-family: "Montserrat", sans-serif;
+  font-weight: 500;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.7);
   animation: fadeUp 1.1s 0.15s ease both;
 }
 .hero-title {
   font-family: "Cormorant Garamond", serif;
-  font-size: clamp(3.5rem, 9vw, 7.5rem);
+  font-size: clamp(3.25rem, 7vw, 6rem);
   font-weight: 300;
   line-height: 1;
-  margin-bottom: 1.4rem;
+  margin-bottom: 1.2rem;
+  text-shadow: 0 4px 30px rgba(0, 0, 0, 0.78);
   animation: fadeUp 1.1s 0.3s ease both;
 }
 .hero-title em {
   display: block;
   font-style: italic;
-  color: var(--gold);
+  color: #f2bd52;
 }
 .hero-sub {
-  font-size: 0.88rem;
-  font-weight: 300;
-  letter-spacing: 0.1em;
-  opacity: 0.85;
-  max-width: 420px;
+  font-size: 0.98rem;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  opacity: 0.96;
+  max-width: 520px;
   margin: 0 auto 2.6rem;
   line-height: 1.8;
+  text-shadow: 0 3px 18px rgba(0, 0, 0, 0.82);
   animation: fadeUp 1.1s 0.45s ease both;
 }
 .hero-cta {
@@ -570,8 +291,8 @@ nav.scrolled {
   text-transform: uppercase;
   font-weight: 500;
   transition:
-      background 0.3s,
-      color 0.3s;
+    background 0.3s,
+    color 0.3s;
   animation: fadeUp 1.1s 0.6s ease both;
 }
 .hero-cta:hover {
@@ -650,9 +371,9 @@ section {
   height: 320px;
   border-radius: 50%;
   background: radial-gradient(
-      circle,
-      rgba(201, 150, 58, 0.12) 0%,
-      transparent 70%
+    circle,
+    rgba(201, 150, 58, 0.12) 0%,
+    transparent 70%
   );
 }
 .why-inner {
@@ -692,16 +413,7 @@ section {
   border: 1px solid rgba(201, 150, 58, 0.2);
   border-radius: 4px;
   padding: 2rem 1.6rem;
-  transition:
-      border-color 0.3s,
-      background 0.3s,
-      transform 0.3s;
   cursor: default;
-}
-.why-card:hover {
-  border-color: var(--gold);
-  background: rgba(201, 150, 58, 0.07);
-  transform: translateY(-3px);
 }
 .why-card-icon {
   font-size: 1.9rem;
@@ -802,9 +514,9 @@ section {
   position: absolute;
   inset: 0;
   background: linear-gradient(
-      to top,
-      rgba(26, 20, 16, 0.55) 0%,
-      transparent 50%
+    to top,
+    rgba(26, 20, 16, 0.55) 0%,
+    transparent 50%
   );
   opacity: 0;
   transition: opacity 0.4s;
@@ -823,37 +535,13 @@ section {
   font-weight: 500;
 }
 
-/* ─── FOOTER ─── */
-footer {
-  background: var(--dark);
-  padding: 2.5rem 5vw;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.footer-logo {
-  font-family: "Cormorant Garamond", serif;
-  font-size: 1.3rem;
-  color: var(--cream);
-  font-weight: 400;
-}
-.footer-logo span {
-  color: var(--gold);
-  font-style: italic;
-}
-.footer-copy {
-  font-size: 0.68rem;
-  color: rgba(245, 240, 232, 0.35);
-  letter-spacing: 0.08em;
-}
-
 /* ─── SCROLL REVEAL ─── */
 .reveal {
   opacity: 0;
   transform: translateY(28px);
   transition:
-      opacity 0.7s ease,
-      transform 0.7s ease;
+    opacity 0.7s ease,
+    transform 0.7s ease;
 }
 .reveal.visible {
   opacity: 1;
@@ -880,9 +568,6 @@ footer {
   }
 }
 @media (max-width: 600px) {
-  .nav-links {
-    display: none;
-  }
   .why-cards {
     grid-template-columns: 1fr;
   }
@@ -890,5 +575,4 @@ footer {
     grid-template-columns: 1fr;
   }
 }
-
 </style>

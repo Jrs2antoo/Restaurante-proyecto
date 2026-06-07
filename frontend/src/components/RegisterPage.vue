@@ -94,7 +94,7 @@
 
       <!-- Login footer -->
       <div class="register-footer">
-        ¿Ya tienes cuenta? <RouterLink to="/login">Inicia sesión</RouterLink>
+        ¿Ya tienes cuenta? <RouterLink :to="{ path: '/login', query: route.query.redirect ? { redirect: route.query.redirect } : {} }">Inicia sesión</RouterLink>
       </div>
 
     </div>
@@ -103,7 +103,8 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { apiUrl } from '@/config/api'
 import {
   getAuth,
   createUserWithEmailAndPassword,
@@ -115,6 +116,7 @@ import {
 } from 'firebase/auth'
 
 const router = useRouter()
+const route = useRoute()
 const auth = getAuth()
 
 const loading = ref(false)
@@ -123,6 +125,43 @@ const successMsg = ref('')
 const showPass = ref(false)
 
 const form = ref({ nombre: '', email: '', password: '', confirm: '' })
+
+const destinoTrasRegistro = () => {
+  const redirect = route.query.redirect
+  return typeof redirect === 'string' && redirect.startsWith('/') ? redirect : '/'
+}
+
+// ── Guarda el usuario en MySQL vía DAB ──
+async function saveUserToDb(nombre, email, passwordHash = 'firebase-auth') {
+  if (!email) {
+    console.warn('saveUserToDb: email vacío, se omite')
+    return
+  }
+
+  try {
+    const payload = {
+      nombre: nombre || '',
+      apellido: '',
+      email: email,
+      contraseña: passwordHash,
+      rol: 'cliente'
+    }
+    const res = await fetch(apiUrl('/Usuario'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+
+    const body = await res.text()
+
+    // 409 Conflict = duplicado, no es error crítico
+    if (!res.ok && res.status !== 409) {
+      console.error('saveUserToDb: error del servidor', res.status, body)
+    }
+  } catch (e) {
+    console.error('saveUserToDb: error de red', e)
+  }
+}
 
 const passwordStrength = computed(() => {
   const p = form.value.password
@@ -165,9 +204,11 @@ async function handleRegister() {
   try {
     const { user } = await createUserWithEmailAndPassword(auth, form.value.email.trim(), form.value.password)
     await updateProfile(user, { displayName: form.value.nombre.trim() })
-    successMsg.value = '¡Cuenta creada! Redirigiendo...' // Ponemos un "cargando" falso para darle más realismo
-    setTimeout(() => router.push('/'), 1400)
+    await saveUserToDb(form.value.nombre.trim(), form.value.email.trim(), user.uid)
+    successMsg.value = '¡Cuenta creada! Redirigiendo...'
+    setTimeout(() => router.push(destinoTrasRegistro()), 1400)
   } catch (err) {
+    console.error('handleRegister error:', err.code, err.message)
     errorMsg.value = firebaseError(err.code)
   } finally {
     loading.value = false
@@ -178,10 +219,21 @@ async function handleSocial(ProviderClass) {
   errorMsg.value = ''
   loading.value = true
   try {
-    await signInWithPopup(auth, new ProviderClass())
-    router.push('/')
+    const { user } = await signInWithPopup(auth, new ProviderClass())
+
+    if (!user.email) {
+      console.warn('El proveedor no devolvió email; no se guarda en BD')
+      router.push(destinoTrasRegistro())
+      return
+    }
+
+    await saveUserToDb(user.displayName || '', user.email, user.uid)
+    router.push(destinoTrasRegistro())
   } catch (err) {
-    if (err.code !== 'auth/popup-closed-by-user') errorMsg.value = firebaseError(err.code)
+    console.error('handleSocial error:', err.code, err.message)
+    if (err.code !== 'auth/popup-closed-by-user') {
+      errorMsg.value = firebaseError(err.code)
+    }
   } finally {
     loading.value = false
   }
@@ -270,7 +322,6 @@ function firebaseError(code) {
 
 .tagline { font-size: 13px; color: #A8A89F; margin-top: 5px; letter-spacing: 0.04em; }
 
-/* ── Alertas ── */
 .alert {
   border-radius: 10px;
   padding: 10px 14px;
@@ -280,7 +331,6 @@ function firebaseError(code) {
 .alert-error   { background: #FEF0EE; border: 1px solid rgba(216, 90, 48, 0.3); color: #993C1D; }
 .alert-success { background: #EEFAF2; border: 1px solid rgba(39, 174, 96, 0.3); color: #1E7A45; }
 
-/* ── Social buttons ── */
 .social-grid { display: flex; flex-direction: column; gap: 10px; margin-bottom: 1.5rem; }
 
 .social-btn {
@@ -304,7 +354,6 @@ function firebaseError(code) {
 .social-btn:active:not(:disabled) { transform: scale(0.98); }
 .social-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-/* ── Divider ── */
 .divider {
   display: flex;
   align-items: center;
@@ -316,7 +365,6 @@ function firebaseError(code) {
 }
 .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: rgba(0, 0, 0, 0.09); }
 
-/* ── Form ── */
 .field { margin-bottom: 14px; }
 
 label {
@@ -373,7 +421,6 @@ input:disabled { opacity: 0.5; cursor: not-allowed; }
 .strength-label { font-size: 11px; color: #A8A89F; margin-top: 5px; letter-spacing: 0.04em; }
 .mismatch-msg { font-size: 11px; color: #D85A30; margin-top: 5px; }
 
-/* ── Submit ── */
 .submit-btn {
   width: 100%;
   padding: 13px;
@@ -409,7 +456,6 @@ input:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ── Footer ── */
 .register-footer {
   text-align: center;
   margin-top: 1.5rem;

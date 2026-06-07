@@ -1,159 +1,278 @@
 <template>
-  <div class="admin-container">
-    <!-- SIDEBAR -->
+  <div class="admin-page">
+    <Cabecera />
+
+    <div class="admin-container">
     <aside class="admin-sidebar">
-      <div class="sidebar-logo">La <span>Brasa</span></div>
       <nav class="sidebar-nav">
-        <button :class="{ active: currentTab === 'usuarios' }" @click="currentTab = 'usuarios'">
-          👤 Usuarios
-        </button>
-        <button :class="{ active: currentTab === 'productos' }" @click="currentTab = 'productos'">
-          🍽️ Productos
-        </button>
-        <button :class="{ active: currentTab === 'reservas' }" @click="currentTab = 'reservas'">
-          📅 Reservas
-        </button>
+        <button :class="{ active: currentTab === 'usuarios' }" @click="currentTab = 'usuarios'">👤 Usuarios</button>
+        <button :class="{ active: currentTab === 'productos' }" @click="currentTab = 'productos'">🍽️ Productos</button>
+        <button :class="{ active: currentTab === 'reservas' }" @click="currentTab = 'reservas'">📅 Reservas</button>
+        <button :class="{ active: currentTab === 'mesas' }" @click="currentTab = 'mesas'">🪑 Mesas</button>
       </nav>
       <button class="btn-logout" @click="handleLogout">🚪 Cerrar sesión</button>
     </aside>
 
-    <!-- MAIN -->
     <main class="admin-main">
       <header class="admin-header">
-        <h1>{{ currentTab === 'usuarios' ? 'Usuarios' : currentTab === 'productos' ? 'Productos' : 'Reservas' }}</h1>
-        <button v-if="currentTab === 'productos'" class="btn-add" @click="openAddProducto">
-          + Añadir producto
-        </button>
+        <h1>{{ tabTitles[currentTab] }}</h1>
+        <button v-if="currentTab === 'productos'" class="btn-add" @click="openAddProducto">+ Nuevo Producto</button>
+        <button v-if="currentTab === 'mesas'" class="btn-add" @click="openAddMesa">+ Nueva Mesa</button>
+        <button v-if="currentTab === 'reservas'" class="btn-add" @click="openAddReserva">+ Nueva Reserva</button>
       </header>
 
-      <!-- LOADING -->
-      <div v-if="loading" class="state-msg">Cargando...</div>
-
-      <!-- ERROR -->
+      <div v-if="loading" class="state-msg">Conectando con la base de datos...</div>
       <div v-else-if="error" class="state-msg error">{{ error }}</div>
 
-      <!-- TABLA USUARIOS -->
-      <div v-else-if="currentTab === 'usuarios'" class="admin-card table-wrapper">
-        <table>
-          <thead>
+      <div v-else class="admin-card table-wrapper">
+        <div class="table-wrapper">
+
+          <!-- TABLA USUARIOS -->
+          <table v-if="currentTab === 'usuarios'">
+            <thead>
             <tr>
               <th>ID</th>
               <th>Nombre</th>
-              <th>Apellido</th>
+              <th>Apellidos</th>
               <th>Email</th>
               <th>Rol</th>
               <th>Acciones</th>
             </tr>
-          </thead>
-          <tbody>
-            <tr v-for="user in usuarios" :key="user.idUsuario">
-              <td>{{ user.idUsuario }}</td>
-              <td>{{ user.nombre }}</td>
-              <td>{{ user.apellido }}</td>
-              <td>{{ user.email }}</td>
-              <td>
-                <span class="badge" :class="user.rol">{{ user.rol }}</span>
-              </td>
+            </thead>
+            <tbody>
+            <tr v-for="u in usuarios" :key="u.idUsuario">
+              <td>{{ u.idUsuario }}</td>
+              <td>{{ u.nombre }}</td>
+              <td>{{ u.apellido }}</td>
+              <td>{{ u.email }}</td>
+              <td><span class="badge" :class="u.rolVisual">{{ u.rolVisual }}</span></td>
               <td class="actions">
-                <button class="btn-edit" @click="openEditUsuario(user)">✏️ Editar</button>
-                <button class="btn-delete" @click="confirmDelete('usuario', user.idUsuario)">🗑️ Eliminar</button>
+                <button class="btn-edit" @click="openEditUsuario(u)">✏️ Editar</button>
+                <button class="btn-delete" @click="confirmDelete('usuario', u.idUsuario)">🗑️ Eliminar</button>
               </td>
             </tr>
-          </tbody>
-        </table>
-        <p class="total">Total: {{ usuarios.length }} usuarios</p>
-      </div>
+            </tbody>
+          </table>
 
-      <!-- TABLA PRODUCTOS -->
-      <div v-else-if="currentTab === 'productos'" class="admin-card table-wrapper">
-        <table>
-          <thead>
+          <!-- TABLA PRODUCTOS -->
+          <table v-if="currentTab === 'productos'">
+            <thead>
             <tr>
               <th>ID</th>
               <th>Nombre</th>
-              <th>Descripción</th>
               <th>Precio</th>
               <th>Categoría</th>
+              <th>Descripción</th>
               <th>Disponible</th>
               <th>Acciones</th>
             </tr>
-          </thead>
-          <tbody>
+            </thead>
+            <tbody>
             <tr v-for="p in productos" :key="p.idProducto">
               <td>{{ p.idProducto }}</td>
               <td>{{ p.nombre }}</td>
-              <td>{{ p.descripcion }}</td>
-              <td>{{ p.precio }} €</td>
+              <td>{{ p.precio }}€</td>
               <td>{{ p.categoria }}</td>
-              <td>
-                <span class="badge" :class="p.disponible ? 'disponible' : 'nodisponible'">
-                  {{ p.disponible ? 'Sí' : 'No' }}
-                </span>
-              </td>
+              <td class="td-desc">{{ p.descripcion || '—' }}</td>
+              <td><span class="badge" :class="p.disponible ? 'disponible' : 'nodisponible'">{{ p.disponible ? 'Sí' : 'No' }}</span></td>
               <td class="actions">
                 <button class="btn-edit" @click="openEditProducto(p)">✏️ Editar</button>
                 <button class="btn-delete" @click="confirmDelete('producto', p.idProducto)">🗑️ Eliminar</button>
               </td>
             </tr>
-          </tbody>
-        </table>
-        <p class="total">Total: {{ productos.length }} productos</p>
-      </div>
+            </tbody>
+          </table>
 
-      <!-- TABLA RESERVAS -->
-      <div v-else-if="currentTab === 'reservas'" class="admin-card table-wrapper">
-        <table>
-          <thead>
+          <!-- TABLA MESAS -->
+          <table v-if="currentTab === 'mesas'">
+            <thead>
+            <tr>
+              <th>ID Mesa</th>
+              <th>Capacidad</th>
+              <th>Ubicación</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr v-for="m in mesas" :key="m.idMesa">
+              <td><strong>#{{ m.idMesa }}</strong></td>
+              <td>{{ m.capacidad }} personas</td>
+              <td>{{ m.ubicacion }}</td>
+              <td>
+                <span class="badge" :class="m.disponible ? 'disponible' : 'nodisponible'">
+                  {{ m.disponible ? 'Disponible' : 'Ocupada' }}
+                </span>
+              </td>
+              <td class="actions">
+                <button class="btn-edit" @click="openEditMesa(m)">✏️ Editar</button>
+                <button class="btn-delete" @click="confirmDelete('mesa', m.idMesa)">🗑️ Eliminar</button>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+
+          <!-- TABLA RESERVAS -->
+          <table v-if="currentTab === 'reservas'">
+            <thead>
             <tr>
               <th>ID</th>
-              <th>Cliente</th>
               <th>Mesa</th>
               <th>Fecha</th>
               <th>Hora</th>
               <th>Personas</th>
-              <th>Estado</th>
               <th>Fianza</th>
-              <th>Pago</th>
+              <th>Estado Pago</th>
               <th>Acciones</th>
             </tr>
-          </thead>
-          <tbody>
+            </thead>
+            <tbody>
             <tr v-for="r in reservas" :key="r.idReserva">
               <td>{{ r.idReserva }}</td>
-              <td>{{ r.idUsuario }}</td>
-              <td>{{ r.idMesa }}</td>
+              <td>Mesa {{ r.idMesa }}</td>
               <td>{{ r.fecha }}</td>
-              <td>{{ r.hora }}</td>
+              <td>{{ formatHora(r.hora) }}</td>
               <td>{{ r.numPersonas }}</td>
-              <td>
-                <span class="badge" :class="r.estado">{{ r.estado }}</span>
-              </td>
-              <td>{{ r.fianza }} €</td>
-              <td>
-                <span class="badge" :class="r.estadoPago">{{ r.estadoPago }}</span>
-              </td>
+              <td>{{ formatFianza(r.fianza, r.numPersonas) }}</td>
+              <td><span class="badge" :class="r.estadoPago === 'pagado' ? 'disponible' : 'nodisponible'">{{ r.estadoPago }}</span></td>
               <td class="actions">
                 <button class="btn-edit" @click="openEditReserva(r)">✏️ Editar</button>
                 <button class="btn-delete" @click="confirmDelete('reserva', r.idReserva)">🗑️ Eliminar</button>
               </td>
             </tr>
-          </tbody>
-        </table>
-        <p class="total">Total: {{ reservas.length }} reservas</p>
+            </tbody>
+          </table>
+        </div>
       </div>
     </main>
+    </div>
 
-    <!-- MODAL EDITAR RESERVA -->
-    <div v-if="modalReserva" class="modal-overlay" @click.self="modalReserva = false">
+    <!-- ═══════════════════════════════════
+         MODAL EDITAR / CREAR USUARIO
+    ═══════════════════════════════════ -->
+    <div v-if="modalUsuario" class="modal-overlay" @click.self="modalUsuario = false">
       <div class="modal">
-        <h2>Editar reserva</h2>
+        <h2>Editar Usuario</h2>
+        <div class="form-group">
+          <label>Nombre</label>
+          <input v-model="editingUsuario.nombre" type="text" placeholder="Nombre" />
+        </div>
+        <div class="form-group">
+          <label>Apellidos</label>
+          <input v-model="editingUsuario.apellido" type="text" placeholder="Apellidos" />
+        </div>
+        <div class="form-group">
+          <label>Email (no editable)</label>
+          <input :value="editingUsuario.email" type="text" disabled class="input-disabled" />
+        </div>
+        <div class="form-group">
+          <label>Rol</label>
+          <select v-model="editingUsuario.rol">
+            <option value="admin">admin</option>
+            <option value="empleado">empleado</option>
+            <option value="cliente">cliente</option>
+          </select>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-cancel" @click="modalUsuario = false">Cancelar</button>
+          <button class="btn-save" @click="saveUsuario">Guardar cambios</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════
+         MODAL EDITAR / CREAR PRODUCTO
+    ═══════════════════════════════════ -->
+    <div v-if="modalProducto" class="modal-overlay" @click.self="modalProducto = false">
+      <div class="modal">
+        <h2>{{ editingProducto.idProducto ? 'Editar Producto' : 'Nuevo Producto' }}</h2>
+        <div class="form-group">
+          <label>Nombre</label>
+          <input v-model="editingProducto.nombre" type="text" placeholder="Nombre del producto" />
+        </div>
+        <div class="form-group">
+          <label>Precio (€)</label>
+          <input v-model="editingProducto.precio" type="number" step="0.01" min="0" placeholder="0.00" />
+        </div>
+        <div class="form-group">
+          <label>Categoría</label>
+          <select v-model="editingProducto.categoria">
+            <option v-for="categoria in categoriasProducto" :key="categoria" :value="categoria">
+              {{ categoria }}
+            </option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Descripción</label>
+          <textarea v-model="editingProducto.descripcion" placeholder="Descripción del producto..." rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Disponible</label>
+          <select v-model="editingProducto.disponible">
+            <option :value="true">Sí</option>
+            <option :value="false">No</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Imagen del producto</label>
+          <div class="img-upload-area">
+            <img v-if="editingProducto.imagen_url" :src="editingProducto.imagen_url" class="img-preview" />
+            <div v-else class="img-placeholder">📷 Sin imagen</div>
+            <input type="file" accept="image/*" @change="onImageSelected" class="file-input" ref="fileInputRef" />
+            <button type="button" class="btn-upload" @click="fileInputRef.click()" :disabled="uploadingImage">
+              {{ uploadingImage ? 'Subiendo…' : '📤 Seleccionar imagen' }}
+            </button>
+            <button v-if="editingProducto.imagen_url" type="button" class="btn-remove-img" @click="editingProducto.imagen_url = ''">✕ Quitar imagen</button>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-cancel" @click="modalProducto = false">Cancelar</button>
+          <button class="btn-save" @click="saveProducto">Guardar en Base de Datos</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════
+         MODAL EDITAR / CREAR MESA
+    ═══════════════════════════════════ -->
+    <div v-if="modalMesa" class="modal-overlay" @click.self="modalMesa = false">
+      <div class="modal">
+        <h2>{{ editingMesa.idMesa ? 'Editar Mesa #' + editingMesa.idMesa : 'Nueva Mesa' }}</h2>
+        <div class="form-group">
+          <label>Capacidad (personas)</label>
+          <input v-model="editingMesa.capacidad" type="number" min="1" />
+        </div>
+        <div class="form-group">
+          <label>Ubicación</label>
+          <select v-model="editingMesa.ubicacion">
+            <option v-for="ubicacion in ubicacionesMesa" :key="ubicacion" :value="ubicacion">
+              {{ ubicacion }}
+            </option>
+          </select>
+        </div>
         <div class="form-group">
           <label>Estado</label>
-          <select v-model="editingReserva.estado">
-            <option value="pendiente">Pendiente</option>
-            <option value="confirmada">Confirmada</option>
-            <option value="cancelada">Cancelada</option>
+          <select v-model="editingMesa.disponible">
+            <option :value="true">Disponible</option>
+            <option :value="false">Ocupada / No disponible</option>
           </select>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-cancel" @click="modalMesa = false">Cancelar</button>
+          <button class="btn-save" @click="saveMesa">Guardar en Base de Datos</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════
+         MODAL EDITAR / CREAR RESERVA
+    ═══════════════════════════════════ -->
+    <div v-if="modalReserva" class="modal-overlay" @click.self="modalReserva = false">
+      <div class="modal">
+        <h2>{{ editingReserva.idReserva ? 'Editar Reserva #' + editingReserva.idReserva : 'Nueva Reserva' }}</h2>
+        <div class="form-group">
+          <label>ID Mesa</label>
+          <input v-model="editingReserva.idMesa" type="number" min="1" placeholder="Número de mesa" />
         </div>
         <div class="form-group">
           <label>Fecha</label>
@@ -164,634 +283,931 @@
           <input v-model="editingReserva.hora" type="time" />
         </div>
         <div class="form-group">
-          <label>Nº Personas</label>
-          <input v-model="editingReserva.numPersonas" type="number" min="1" />
+          <label>Número de personas</label>
+          <input v-model="editingReserva.numPersonas" type="number" min="1" placeholder="Pax" />
         </div>
         <div class="form-group">
           <label>Fianza (€)</label>
-          <input v-model="editingReserva.fianza" type="number" step="0.01" />
+          <input v-model="editingReserva.fianza" type="number" step="0.01" min="0" placeholder="0.00" />
         </div>
         <div class="form-group">
-          <label>Estado pago</label>
+          <label>Estado de pago</label>
           <select v-model="editingReserva.estadoPago">
             <option value="pendiente">Pendiente</option>
             <option value="pagado">Pagado</option>
             <option value="reembolsado">Reembolsado</option>
           </select>
         </div>
-        <div class="form-group">
-          <label>Método pago</label>
-          <select v-model="editingReserva.metodoPago">
-            <option value="">Sin método</option>
-            <option value="tarjeta">Tarjeta</option>
-            <option value="efectivo">Efectivo</option>
-            <option value="transferencia">Transferencia</option>
-          </select>
-        </div>
         <div class="modal-actions">
           <button class="btn-cancel" @click="modalReserva = false">Cancelar</button>
-          <button class="btn-save" @click="saveReserva">Guardar</button>
+          <button class="btn-save" @click="saveReserva">Guardar en Base de Datos</button>
         </div>
       </div>
     </div>
 
-    <!-- MODAL EDITAR/CREAR USUARIO -->
-    <div v-if="modalUsuario" class="modal-overlay" @click.self="modalUsuario = false">
-      <div class="modal">
-        <h2>{{ editingUsuario.idUsuario ? 'Editar usuario' : 'Nuevo usuario' }}</h2>
-        <div class="form-group">
-          <label>Nombre</label>
-          <input v-model="editingUsuario.nombre" type="text" />
-        </div>
-        <div class="form-group">
-          <label>Apellido</label>
-          <input v-model="editingUsuario.apellido" type="text" />
-        </div>
-        <div class="form-group">
-          <label>Email</label>
-          <input v-model="editingUsuario.email" type="email" />
-        </div>
-        <div class="form-group">
-          <label>Rol</label>
-          <select v-model="editingUsuario.rol">
-            <option value="cliente">Cliente</option>
-            <option value="empleado">Empleado</option>
-          </select>
-        </div>
-        <div class="modal-actions">
-          <button class="btn-cancel" @click="modalUsuario = false">Cancelar</button>
-          <button class="btn-save" @click="saveUsuario">Guardar</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- MODAL EDITAR/CREAR PRODUCTO -->
-    <div v-if="modalProducto" class="modal-overlay" @click.self="modalProducto = false">
-      <div class="modal">
-        <h2>{{ editingProducto.idProducto ? 'Editar producto' : 'Nuevo producto' }}</h2>
-        <div class="form-group">
-          <label>Nombre</label>
-          <input v-model="editingProducto.nombre" type="text" />
-        </div>
-        <div class="form-group">
-          <label>Descripción</label>
-          <input v-model="editingProducto.descripcion" type="text" />
-        </div>
-        <div class="form-group">
-          <label>Precio (€)</label>
-          <input v-model="editingProducto.precio" type="number" step="0.01" />
-        </div>
-        <div class="form-group">
-          <label>Categoría</label>
-          <input v-model="editingProducto.categoria" type="text" />
-        </div>
-        <div class="form-group checkbox-group">
-          <label>
-            <input v-model="editingProducto.disponible" type="checkbox" />
-            Disponible
-          </label>
-        </div>
-        <div class="modal-actions">
-          <button class="btn-cancel" @click="modalProducto = false">Cancelar</button>
-          <button class="btn-save" @click="saveProducto">Guardar</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- MODAL CONFIRMAR BORRADO -->
-    <div v-if="deleteConfirm.show" class="modal-overlay" @click.self="deleteConfirm.show = false">
+    <!-- ═══════════════════════════════════
+         MODAL CONFIRMACIÓN ELIMINAR
+    ═══════════════════════════════════ -->
+    <div v-if="deleteConfirm.show" class="modal-overlay">
       <div class="modal modal-sm">
-        <h2>¿Eliminar?</h2>
-        <p>Esta acción no se puede deshacer.</p>
+        <div class="delete-icon">🗑️</div>
+        <h2>¿Estás seguro?</h2>
+        <p>Esta acción eliminará el registro permanentemente de la base de datos y no se puede deshacer.</p>
         <div class="modal-actions">
-          <button class="btn-cancel" @click="deleteConfirm.show = false">Cancelar</button>
-          <button class="btn-delete" @click="executeDelete">Eliminar</button>
+          <button class="btn-cancel" @click="deleteConfirm.show = false">No, cancelar</button>
+          <button class="btn-delete-confirm" @click="executeDelete">Sí, eliminar</button>
         </div>
       </div>
     </div>
+
+    <!-- TOAST NOTIFICACIÓN -->
+    <div v-if="toast.show" :class="['toast', toast.type]">{{ toast.msg }}</div>
+
+    <Footer />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from "vue";
+import { ref, watch } from "vue";
 import { getAuth, signOut } from "firebase/auth";
 import { useRouter } from "vue-router";
+import { createClient } from "@supabase/supabase-js";
+import Cabecera from "./Cabecera.vue";
+import Footer from "./Footer.vue";
+import { API_BASE_URL as API } from "@/config/api";
 
-const API = "/api";
+const categoriasProducto = ["Entrantes", "Carnes", "Pescados", "Postres", "Bebidas"];
+const ubicacionesMesa = ["Interior", "Terraza"];
+const formatearPrecioParaApi = (precio) => Number(precio).toFixed(2).replace(".", ",");
+const productoSoportaImagenUrl = ref(false);
+
+// ── Supabase Storage ─────────────────────────────────────────
+const BUCKET = "productos-img";
+
+let _supabase = null;
+const getSupabase = () => {
+  if (_supabase) return _supabase;
+  const url = import.meta.env.VITE_SUPABASE_URL;
+  const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  if (!url || !key) throw new Error("Supabase no configurado: falta VITE_SUPABASE_URL o VITE_SUPABASE_ANON_KEY en el .env");
+  _supabase = createClient(url, key);
+  return _supabase;
+};
+
+const fileInputRef = ref(null);
+const uploadingImage = ref(false);
+
+const onImageSelected = async (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+  uploadingImage.value = true;
+  try {
+    const supabase = getSupabase();
+    const ext = file.name.split(".").pop();
+    const path = `productos/${Date.now()}.${ext}`;
+    const { error: uploadError } = await supabase.storage
+        .from(BUCKET)
+        .upload(path, file, { upsert: true });
+    if (uploadError) throw uploadError;
+    const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
+    editingProducto.value.imagen_url = data.publicUrl;
+    showToast("Imagen subida correctamente.");
+  } catch (err) {
+    console.error(err);
+    showToast("Error al subir la imagen.", "error");
+  } finally {
+    uploadingImage.value = false;
+    if (fileInputRef.value) fileInputRef.value.value = "";
+  }
+};
+const router = useRouter();
 
 const usuarios = ref([]);
 const productos = ref([]);
 const reservas = ref([]);
-const loading = ref(true);
+const mesas = ref([]);
+const loading = ref(false);
 const error = ref("");
 const currentTab = ref("usuarios");
-const router = useRouter();
+
+const tabTitles = {
+  usuarios: "Gestión de Personal y Clientes",
+  productos: "Carta de Productos",
+  reservas: "Control de Reservas",
+  mesas: "Configuración de Salón"
+};
 
 // Modales
-const modalUsuario = ref(false);
+const modalUsuario  = ref(false);
 const modalProducto = ref(false);
-const modalReserva = ref(false);
-const editingUsuario = ref({});
+const modalMesa     = ref(false);
+const modalReserva  = ref(false);
+const editingUsuario  = ref({});
 const editingProducto = ref({});
-const editingReserva = ref({});
-const deleteConfirm = ref({ show: false, type: "", id: null });
+const editingMesa     = ref({});
+const editingReserva  = ref({});
+const deleteConfirm   = ref({ show: false, type: "", id: null });
 
-// ─── FETCH ───────────────────────────────────────────
-const fetchUsuarios = async () => {
+// Toast
+const toast = ref({ show: false, type: "success", msg: "" });
+const showToast = (msg, type = "success") => {
+  toast.value = { show: true, type, msg };
+  setTimeout(() => { toast.value.show = false; }, 3000);
+};
+
+// ─── CARGA DE DATOS ───────────────────────────────────
+const fetchApiList = async (entity, filter = "") => {
+  const url = filter
+      ? `${API}/${entity}?$filter=${encodeURIComponent(filter)}`
+      : `${API}/${entity}`;
+  const res = await fetch(url);
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.value || data || [];
+};
+
+const normalizarFianza = (fianza, personas) => {
+  const importe = Number(fianza);
+  if (!Number.isFinite(importe)) return 0;
+
+  const importeEsperado = Number(personas || 0) * 2.5;
+  if (importeEsperado && Math.abs(importe / 10 - importeEsperado) < 0.01) {
+    return importe / 10;
+  }
+
+  return importe;
+};
+
+const formatFianza = (fianza, personas) =>
+    `${normalizarFianza(fianza, personas).toLocaleString("es-ES", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })} €`;
+
+const formatHora = (hora) => String(hora || "").substring(0, 5);
+
+const cargarUsuariosConRolVisual = async () => {
+  const [usuariosData, administradoresData] = await Promise.all([
+    fetch(`${API}/Usuario`).then((res) => {
+      if (!res.ok) throw new Error();
+      return res.json();
+    }),
+    fetch(`${API}/Administrador`).then((res) =>
+        res.ok ? res.json() : { value: [] },
+    ),
+  ]);
+
+  const administradoresIds = new Set(
+      (administradoresData.value || administradoresData || []).map((a) =>
+          Number(a.idUsuario),
+      ),
+  );
+
+  usuarios.value = (usuariosData.value || usuariosData || []).map((u) => ({
+    ...u,
+    rolVisual: administradoresIds.has(Number(u.idUsuario)) ? "admin" : u.rol,
+  }));
+};
+
+const refresh = async () => {
   loading.value = true;
   error.value = "";
   try {
-    const res = await fetch(`${API}/Usuario`);
-    if (!res.ok) throw new Error(`Error ${res.status}`);
-    const json = await res.json();
-    usuarios.value = json.value;
-  } catch (e) {
-    error.value = "No se pudieron cargar los usuarios.";
+    if (currentTab.value === "usuarios") {
+      await cargarUsuariosConRolVisual();
+      return;
+    }
+
+    const endpoint = currentTab.value === 'usuarios'  ? 'Usuario'  :
+        currentTab.value === 'productos' ? 'Producto' :
+            currentTab.value === 'reservas'  ? 'Reserva'  : 'Mesa';
+
+    const res = await fetch(`${API}/${endpoint}`);
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    const registros = data.value || data;
+
+    if (currentTab.value === 'productos') {
+      productos.value = registros;
+      productoSoportaImagenUrl.value = registros.some((producto) =>
+          Object.prototype.hasOwnProperty.call(producto, "imagen_url")
+      );
+    }
+    if (currentTab.value === 'reservas')  reservas.value  = registros;
+    if (currentTab.value === 'mesas')     mesas.value     = registros;
+  } catch {
+    error.value = "Error al conectar con la API.";
   } finally {
     loading.value = false;
   }
 };
 
-const fetchProductos = async () => {
-  loading.value = true;
-  error.value = "";
-  try {
-    const res = await fetch(`${API}/Producto`);
-    if (!res.ok) throw new Error(`Error ${res.status}`);
-    const json = await res.json();
-    productos.value = json.value;
-  } catch (e) {
-    error.value = "No se pudieron cargar los productos.";
-  } finally {
-    loading.value = false;
-  }
-};
+watch(currentTab, refresh, { immediate: true });
 
-const fetchReservas = async () => {
-  loading.value = true;
-  error.value = "";
-  try {
-    const res = await fetch(`${API}/Reserva`);
-    if (!res.ok) throw new Error(`Error ${res.status}`);
-    const json = await res.json();
-    reservas.value = json.value;
-  } catch (e) {
-    error.value = "No se pudieron cargar las reservas.";
-  } finally {
-    loading.value = false;
-  }
-};
-
-watch(currentTab, (tab) => {
-  if (tab === "usuarios") fetchUsuarios();
-  else if (tab === "productos") fetchProductos();
-  else fetchReservas();
-});
-
-// ─── USUARIOS ────────────────────────────────────────
-const openEditUsuario = (user) => {
-  editingUsuario.value = { ...user };
+// ─── USUARIOS ─────────────────────────────────────────
+const openEditUsuario = (u) => {
+  editingUsuario.value = { ...u, rol: u.rolVisual || u.rol };
   modalUsuario.value = true;
 };
 
 const saveUsuario = async () => {
-  const { idUsuario, nombre, apellido, email, rol } = editingUsuario.value;
+  const { idUsuario, nombre, apellido, rol } = editingUsuario.value;
+  const rolUsuario = rol === "admin" ? "empleado" : rol;
+
   try {
     const res = await fetch(`${API}/Usuario/idUsuario/${idUsuario}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nombre, apellido, email, rol }),
+      body: JSON.stringify({ nombre, apellido, rol: rolUsuario })
     });
-    if (!res.ok) throw new Error();
+    if (!res.ok) throw new Error(await res.text());
+
+    await syncUsuarioRol(idUsuario, rol);
+
     modalUsuario.value = false;
-    fetchUsuarios();
-  } catch {
-    alert("Error al guardar el usuario.");
+    showToast("Usuario actualizado correctamente.");
+    refresh();
+  } catch (e) {
+    console.error("Error actualizando usuario:", e);
+    showToast("Error al actualizar el usuario.", "error");
   }
 };
 
-// ─── PRODUCTOS ───────────────────────────────────────
-const openEditProducto = (p) => {
-  editingProducto.value = { ...p };
+// ─── PRODUCTOS ────────────────────────────────────────
+const openAddProducto = () => {
+  editingProducto.value = { nombre: "", precio: "", categoria: "Entrantes", descripcion: "", disponible: true, imagen_url: "" };
   modalProducto.value = true;
 };
 
-const openAddProducto = () => {
-  editingProducto.value = { nombre: "", descripcion: "", precio: 0, categoria: "", disponible: true };
+const openEditProducto = (p) => {
+  editingProducto.value = {
+    ...p,
+    categoria: categoriasProducto.includes(p.categoria) ? p.categoria : "Entrantes",
+  };
   modalProducto.value = true;
 };
 
 const saveProducto = async () => {
-  const { idProducto, nombre, descripcion, precio, categoria, disponible } = editingProducto.value;
-  const body = JSON.stringify({ nombre, descripcion, precio: parseFloat(precio), categoria, disponible });
+  const { idProducto, nombre, precio, categoria, descripcion, disponible, imagen_url } = editingProducto.value;
+  const precioNumero = Number(precio);
+  if (!nombre?.trim() || !Number.isFinite(precioNumero) || !categoriasProducto.includes(categoria)) {
+    showToast("Revisa nombre, precio y categoría del producto.", "error");
+    return;
+  }
+
+  const payload = {
+    nombre: nombre.trim(),
+    precio: formatearPrecioParaApi(precioNumero),
+    categoria,
+    descripcion: descripcion || null,
+    disponible: disponible === true || disponible === "true"
+  };
+
+  if (productoSoportaImagenUrl.value) {
+    payload.imagen_url = imagen_url || null;
+  }
+
   try {
-    let res;
-    if (idProducto) {
-      res = await fetch(`${API}/Producto/idProducto/${idProducto}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body,
-      });
-    } else {
-      res = await fetch(`${API}/Producto`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body,
-      });
+    const url    = idProducto ? `${API}/Producto/idProducto/${idProducto}` : `${API}/Producto`;
+    const method = idProducto ? "PATCH" : "POST";
+    const res = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      const detalle = await res.text();
+      console.error("Error al guardar producto:", res.status, detalle, payload);
+      throw new Error(detalle || `HTTP ${res.status}`);
     }
-    if (!res.ok) throw new Error();
     modalProducto.value = false;
-    fetchProductos();
+    if (imagen_url && !productoSoportaImagenUrl.value) {
+      showToast("Producto guardado, pero falta activar imagen_url en la API.", "error");
+    } else {
+      showToast(idProducto ? "Producto actualizado." : "Producto creado.");
+    }
+    refresh();
   } catch {
-    alert("Error al guardar el producto.");
+    showToast("Error al guardar el producto.", "error");
+  }
+};
+
+// ─── MESAS ────────────────────────────────────────────
+const openAddMesa = () => {
+  editingMesa.value = { capacidad: 2, ubicacion: "Interior", disponible: true };
+  modalMesa.value = true;
+};
+
+const openEditMesa = (m) => {
+  editingMesa.value = { ...m };
+  modalMesa.value = true;
+};
+
+const saveMesa = async () => {
+  const { idMesa, capacidad, ubicacion, disponible } = editingMesa.value;
+  const payload = {
+    capacidad: parseInt(capacidad),
+    ubicacion,
+    disponible: disponible === true || disponible === "true"
+  };
+  try {
+    const url    = idMesa ? `${API}/Mesa/idMesa/${idMesa}` : `${API}/Mesa`;
+    const method = idMesa ? "PATCH" : "POST";
+    const res = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error();
+    modalMesa.value = false;
+    showToast(idMesa ? "Mesa actualizada." : "Mesa creada.");
+    refresh();
+  } catch {
+    showToast("Error al guardar la mesa.", "error");
   }
 };
 
 // ─── RESERVAS ─────────────────────────────────────────
+const openAddReserva = () => {
+  editingReserva.value = { idMesa: "", fecha: "", hora: "", numPersonas: 1, fianza: 0, estadoPago: "pendiente" };
+  modalReserva.value = true;
+};
+
 const openEditReserva = (r) => {
   editingReserva.value = { ...r };
   modalReserva.value = true;
 };
 
 const saveReserva = async () => {
-  const { idReserva, estado, fecha, hora, numPersonas, fianza, estadoPago, metodoPago } = editingReserva.value;
+  const { idReserva, idMesa, fecha, hora, numPersonas, fianza, estadoPago } = editingReserva.value;
+  const payload = {
+    idMesa: parseInt(idMesa),
+    fecha,
+    hora,
+    numPersonas: parseInt(numPersonas),
+    fianza: parseFloat(fianza),
+    estadoPago
+  };
   try {
-    const res = await fetch(`${API}/Reserva/idReserva/${idReserva}`, {
-      method: "PATCH",
+    const url    = idReserva ? `${API}/Reserva/idReserva/${idReserva}` : `${API}/Reserva`;
+    const method = idReserva ? "PATCH" : "POST";
+    const res = await fetch(url, {
+      method,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ estado, fecha, hora, numPersonas: parseInt(numPersonas), fianza: parseFloat(fianza), estadoPago, metodoPago }),
+      body: JSON.stringify(payload)
     });
     if (!res.ok) throw new Error();
     modalReserva.value = false;
-    fetchReservas();
+    showToast(idReserva ? "Reserva actualizada." : "Reserva creada.");
+    refresh();
   } catch {
-    alert("Error al guardar la reserva.");
+    showToast("Error al guardar la reserva.", "error");
   }
 };
 
 // ─── ELIMINAR ─────────────────────────────────────────
+const postApi = async (url, body, { ignoreConflict = false } = {}) => {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (ignoreConflict && (res.status === 409 || res.status === 400)) return;
+  if (!res.ok) {
+    const msg = await res.text().catch(() => "");
+    throw new Error(msg || `Error ${res.status} al crear ${url}`);
+  }
+};
+
+const deleteApi = async (url, { ignoreNotFound = false } = {}) => {
+  const res = await fetch(url, { method: "DELETE" });
+  if (ignoreNotFound && (res.status === 404 || res.status === 400)) return;
+  if (!res.ok) {
+    const msg = await res.text().catch(() => "");
+    throw new Error(msg || `Error ${res.status} al eliminar ${url}`);
+  }
+};
+
+const ensureEmpleado = async (idUsuario, puesto = "mesero") => {
+  const id = Number(idUsuario);
+  const empleado = await fetchApiList("Empleado", `idUsuario eq ${id}`);
+
+  if (empleado.length) {
+    await fetch(`${API}/Empleado/idUsuario/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ puesto }),
+    });
+    return;
+  }
+
+  await postApi(`${API}/Empleado`, { idUsuario: id, puesto }, { ignoreConflict: true });
+};
+
+const ensureAdministrador = async (idUsuario) => {
+  const id = Number(idUsuario);
+  const administrador = await fetchApiList("Administrador", `idUsuario eq ${id}`);
+
+  if (!administrador.length) {
+    await postApi(`${API}/Administrador`, { idUsuario: id }, { ignoreConflict: true });
+  }
+};
+
+const syncUsuarioRol = async (idUsuario, rolVisual) => {
+  const id = Number(idUsuario);
+
+  if (rolVisual === "admin") {
+    await ensureEmpleado(id, "administrador");
+    await ensureAdministrador(id);
+    return;
+  }
+
+  if (rolVisual === "empleado") {
+    await deleteApi(`${API}/Administrador/idUsuario/${id}`, { ignoreNotFound: true });
+    await ensureEmpleado(id, "mesero");
+    return;
+  }
+
+  if (rolVisual === "cliente") {
+    await deleteApi(`${API}/Administrador/idUsuario/${id}`, { ignoreNotFound: true });
+    await deleteApi(`${API}/Empleado/idUsuario/${id}`, { ignoreNotFound: true });
+
+    const cliente = await fetchApiList("Cliente", `idUsuario eq ${id}`);
+    if (!cliente.length) {
+      await postApi(`${API}/Cliente`, { idUsuario: id }, { ignoreConflict: true });
+    }
+  }
+};
+
 const confirmDelete = (type, id) => {
   deleteConfirm.value = { show: true, type, id };
 };
 
 const executeDelete = async () => {
   const { type, id } = deleteConfirm.value;
-  const endpoint = type === "usuario"
-    ? `${API}/Usuario/idUsuario/${id}`
-    : type === "producto"
-    ? `${API}/Producto/idProducto/${id}`
-    : `${API}/Reserva/idReserva/${id}`;
+  const endpointMap = {
+    usuario:  "Usuario/idUsuario",
+    producto: "Producto/idProducto",
+    reserva:  "Reserva/idReserva",
+    mesa:     "Mesa/idMesa"
+  };
   try {
-    const res = await fetch(endpoint, { method: "DELETE" });
+    const res = await fetch(`${API}/${endpointMap[type]}/${id}`, { method: "DELETE" });
     if (!res.ok) throw new Error();
     deleteConfirm.value.show = false;
-    if (type === "usuario") fetchUsuarios();
-    else if (type === "producto") fetchProductos();
-    else fetchReservas();
+    showToast("Registro eliminado correctamente.");
+    refresh();
   } catch {
-    alert("Error al eliminar.");
+    deleteConfirm.value.show = false;
+    showToast("No se pudo eliminar el registro.", "error");
   }
 };
 
-// ─── AUTH ─────────────────────────────────────────────
-const handleLogout = async () => {
-  await signOut(getAuth());
+const handleLogout = () => {
+  signOut(getAuth());
   router.push("/login");
 };
-
-onMounted(fetchUsuarios);
 </script>
 
 <style scoped>
-@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;1,400&family=Montserrat:wght@300;400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Montserrat:wght@400;600&display=swap");
 
-.admin-container {
-  display: grid;
-  grid-template-columns: 240px 1fr;
+/* ── RESET TOTAL SCOPED ── */
+.admin-page {
   min-height: 100vh;
-  height: 100vh;
-  font-family: "Montserrat", sans-serif;
   background: #fdfbf9;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
 }
 
-/* SIDEBAR */
-.admin-sidebar {
-  background: #1a1410;
-  color: #f5f0e8;
-  padding: 2rem 1.5rem;
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  position: sticky;
-  top: 0;
-  overflow-y: auto;
+.admin-page :deep(nav) {
+  background: #1a1410 !important;
 }
+
+.admin-container { all: initial; }
+
+.admin-container,
+.admin-container * {
+  box-sizing: border-box !important;
+  font-family: "Montserrat", sans-serif;
+}
+
+/* ── LAYOUT ── */
+.admin-container {
+  display: flex !important;
+  flex-direction: row !important;
+  width: 100%;
+  min-height: calc(100vh - 72px);
+  margin-top: 72px;
+  overflow: visible;
+  background: #fdfbf9;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── SIDEBAR ── */
+.admin-sidebar {
+  width: 240px !important;
+  min-width: 240px !important;
+  max-width: 240px !important;
+  flex-shrink: 0 !important;
+  height: calc(100vh - 72px) !important;
+  background: #1a1410 !important;
+  color: #f5f0e8 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  padding: 1.5rem 1rem !important;
+  position: sticky !important;
+  top: 72px !important;
+  z-index: 10 !important;
+  overflow: hidden !important;
+}
+
 .sidebar-logo {
-  font-family: "Cormorant Garamond", serif;
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin-bottom: 3rem;
+  font-family: "Cormorant Garamond", serif !important;
+  font-size: 1.7rem !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+  color: #f5f0e8 !important;
+  letter-spacing: 0.06em !important;
+  text-decoration: none !important;
+  padding-bottom: 1.2rem !important;
+  margin-bottom: 1rem !important;
+  border-bottom: none !important;
+  display: block !important;
+  width: 100% !important;
+  position: static !important;
+  float: none !important;
+  flex-shrink: 0 !important;
+  line-height: 1.3 !important;
 }
 .sidebar-logo span {
-  color: #c9963a;
-  font-style: italic;
+  color: #c9963a !important;
+  font-style: italic !important;
 }
+
+/* ── NAV (ACTUALIZADO) ── */
 .sidebar-nav {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  flex: 1;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 4px !important;
+  width: 100% !important;
+  flex: 1 !important;
+  overflow-y: auto !important;
+  position: static !important;
+  /* Eliminamos padding lateral del contenedor para que el hover llegue al borde */
+  margin: 0 -1rem !important;
 }
+
 .sidebar-nav button {
-  background: transparent;
-  border: none;
-  color: #f5f0e8;
-  text-align: left;
-  padding: 12px 16px;
-  font-family: "Montserrat", sans-serif;
-  font-size: 0.85rem;
-  cursor: pointer;
-  border-radius: 4px;
-  transition: 0.2s;
+  all: unset !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+  /* Aumentamos el padding lateral para compensar el margen negativo del contenedor */
+  padding: 12px 24px !important;
+  border-radius: 0 !important; /* Cambiado a 0 para que cubra de borde a borde rectamente */
+  font-family: "Montserrat", sans-serif !important;
+  font-size: 0.88rem !important;
+  color: #a89880 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  position: relative !important;
 }
-.sidebar-nav button.active,
-.sidebar-nav button:hover {
-  background: rgba(201, 150, 58, 0.2);
-  color: #c9963a;
+
+.sidebar-nav button.active {
+  color: #fff !important;
+  font-weight: 600 !important;
 }
+
+.sidebar-nav button:hover:not(.active) {
+
+  color: #f5f0e8 !important;
+  padding-left: 30px !important; /* Efecto sutil de desplazamiento al entrar */
+}
+
+/* ── LOGOUT ── */
 .btn-logout {
-  background: transparent;
-  border: 1px solid rgba(245, 240, 232, 0.15);
-  color: rgba(245, 240, 232, 0.5);
-  padding: 10px 16px;
-  font-family: "Montserrat", sans-serif;
-  font-size: 0.8rem;
-  cursor: pointer;
-  border-radius: 4px;
-  text-align: left;
-  transition: 0.2s;
+  all: unset !important;
+  display: none !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  flex-shrink: 0 !important;
+  background: transparent !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  color: #888 !important;
+  padding: 10px !important;
+  border-radius: 7px !important;
+  cursor: pointer !important;
+  font-family: "Montserrat", sans-serif !important;
+  font-size: 0.85rem !important;
+  text-align: center !important;
+  margin-top: 0.75rem !important;
+  transition: all 0.2s !important;
 }
 .btn-logout:hover {
-  border-color: #c9963a;
-  color: #c9963a;
+  background: rgba(211,47,47,0.15) !important;
+  color: #ef9a9a !important;
+  border-color: rgba(211,47,47,0.4) !important;
 }
 
-/* MAIN */
+/* ── MAIN ── */
 .admin-main {
-  padding: 3rem;
-  overflow-y: auto;
-  height: 100vh;
+  flex: 1 !important;
+  min-width: 0 !important;
+  min-height: calc(100vh - 72px) !important;
+  overflow: visible !important;
+  padding: 2.5rem 3rem !important;
+  background: #fdfbf9 !important;
+  display: block !important;
 }
+
 .admin-header {
-  margin-bottom: 2.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-bottom: 2rem !important;
 }
+
 .admin-header h1 {
-  font-family: "Cormorant Garamond", serif;
-  font-size: 2.5rem;
-  font-weight: 300;
-  color: #1a1410;
+  font-family: "Cormorant Garamond", serif !important;
+  font-size: 2.4rem !important;
+  color: #1a1410 !important;
+  margin: 0 !important;
+  line-height: 1.2 !important;
 }
+
 .btn-add {
-  background: #c9963a;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 4px;
-  font-family: "Montserrat", sans-serif;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: 0.2s;
+  flex-shrink: 0 !important;
+  background: #c9963a !important;
+  color: white !important;
+  border: none !important;
+  padding: 10px 22px !important;
+  border-radius: 6px !important;
+  font-family: "Montserrat", sans-serif !important;
+  font-weight: 600 !important;
+  font-size: 0.88rem !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
 }
-.btn-add:hover {
-  background: #b8852e;
-}
+.btn-add:hover { background: #b8852e !important; }
 
-/* ESTADO */
-.state-msg {
-  padding: 2rem;
-  text-align: center;
-  color: #6b4c2a;
-  font-size: 0.9rem;
-}
-.state-msg.error {
-  color: #c0392b;
-  background: #fdf0ee;
-  border-radius: 4px;
-}
-
-/* TABLA */
+/* ── CARD + TABLA ── */
 .admin-card {
-  background: white;
-  border-radius: 4px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
-  overflow: hidden;
+  background: white !important;
+  border-radius: 10px !important;
+  border: 1px solid #f0ebe4 !important;
+  box-shadow: 0 4px 25px rgba(0,0,0,0.04) !important;
+  overflow: hidden !important;
 }
+
+.table-wrapper { overflow-x: auto !important; }
+
 table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.85rem;
+  width: 100% !important;
+  border-collapse: collapse !important;
+  min-width: 580px !important;
 }
-thead {
-  background: #f8f5f2;
-}
+
+thead tr { background: #fcfaf8 !important; }
+
 th {
-  padding: 1rem 1.2rem;
-  text-align: left;
-  font-size: 0.65rem;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  color: #6b4c2a;
-  font-weight: 600;
+  padding: 0.9rem 1.2rem !important;
+  text-align: left !important;
+  font-size: 0.7rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1.2px !important;
+  color: #8a735a !important;
+  border-bottom: 2px solid #f0ebe4 !important;
+  white-space: nowrap !important;
+  font-weight: 600 !important;
 }
+
 td {
-  padding: 1rem 1.2rem;
-  border-bottom: 1px solid #f0ebe4;
-  color: #2d2520;
-}
-tbody tr:last-child td {
-  border-bottom: none;
-}
-tbody tr:hover {
-  background: #fdfaf7;
+  padding: 0.9rem 1.2rem !important;
+  border-bottom: 1px solid #f5f0ea !important;
+  font-size: 0.88rem !important;
+  color: #3a3830 !important;
+  vertical-align: middle !important;
 }
 
-/* ACCIONES */
-.actions {
-  display: flex;
-  gap: 0.5rem;
-}
-.btn-edit {
-  background: #f0f4ff;
-  color: #3a5fc9;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  cursor: pointer;
-  transition: 0.2s;
-  font-family: "Montserrat", sans-serif;
-}
-.btn-edit:hover {
-  background: #dce6ff;
-}
-.btn-delete {
-  background: #fff0f0;
-  color: #c0392b;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  cursor: pointer;
-  transition: 0.2s;
-  font-family: "Montserrat", sans-serif;
-}
-.btn-delete:hover {
-  background: #ffd6d6;
+tbody tr:last-child td { border-bottom: none !important; }
+tbody tr:hover { background: #fdfaf7 !important; }
+
+.td-desc {
+  max-width: 200px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
 }
 
-/* BADGES */
+/* ── BADGES ── */
 .badge {
-  display: inline-block;
-  padding: 3px 10px;
-  border-radius: 20px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: capitalize;
+  display: inline-block !important;
+  padding: 3px 10px !important;
+  border-radius: 20px !important;
+  font-size: 0.72rem !important;
+  font-weight: 600 !important;
 }
-.badge.cliente { background: #e8f4ea; color: #2e7d32; }
-.badge.empleado { background: #fff3e0; color: #e65100; }
-.badge.admin { background: #fce4ec; color: #c62828; }
-.badge.disponible { background: #e8f4ea; color: #2e7d32; }
-.badge.nodisponible { background: #fce4ec; color: #c62828; }
-.badge.confirmada { background: #e8f4ea; color: #2e7d32; }
-.badge.pendiente { background: #fff3e0; color: #e65100; }
-.badge.cancelada { background: #fce4ec; color: #c62828; }
-.badge.pagado { background: #e8f4ea; color: #2e7d32; }
-.badge.reembolsado { background: #e8f0fe; color: #3a5fc9; }
+.badge.disponible   { background: #e8f5e9 !important; color: #2e7d32 !important; }
+.badge.nodisponible { background: #ffebee !important; color: #c62828 !important; }
+.badge.admin        { background: #fff1f1 !important; color: #d32f2f !important; }
+.badge.empleado     { background: #e3f2fd !important; color: #1565c0 !important; }
+.badge.cliente      { background: #f3e5f5 !important; color: #6a1b9a !important; }
+.badge.pendiente    { background: #fff8e1 !important; color: #e65100 !important; }
+.badge.pagado       { background: #e8f5e9 !important; color: #2e7d32 !important; }
+.badge.cancelado    { background: #ffebee !important; color: #c62828 !important; }
 
-/* TOTAL */
-.total {
-  padding: 1rem 1.2rem;
-  font-size: 0.75rem;
-  color: #a89880;
-  border-top: 1px solid #f0ebe4;
-  text-align: right;
+/* ── ACCIONES ── */
+.actions {
+  display: flex !important;
+  gap: 6px !important;
+  align-items: center !important;
 }
 
-/* MODAL */
+.btn-edit,
+.btn-delete {
+  all: unset !important;
+  box-sizing: border-box !important;
+  border: 1px solid #e8e3dc !important;
+  padding: 5px 12px !important;
+  border-radius: 5px !important;
+  cursor: pointer !important;
+  font-size: 0.78rem !important;
+  font-weight: 600 !important;
+  font-family: "Montserrat", sans-serif !important;
+  white-space: nowrap !important;
+  background: #f8f6f3 !important;
+  color: #5a5040 !important;
+}
+.btn-edit:hover   { background: #eef2ff !important; color: #3f51b5 !important; border-color: #c5cae9 !important; }
+.btn-delete:hover { background: #fff0f0 !important; color: #d32f2f !important; border-color: #ffcdd2 !important; }
+
+/* ── MENSAJES ── */
+.state-msg {
+  padding: 4rem !important;
+  text-align: center !important;
+  color: #8a735a !important;
+  font-size: 0.95rem !important;
+}
+.state-msg.error { color: #d32f2f !important; }
+
+/* ── MODALES ── */
 .modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(26, 20, 16, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
+  position: fixed !important;
+  inset: 0 !important;
+  background: rgba(20,14,10,0.7) !important;
+  backdrop-filter: blur(3px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 9999 !important;
 }
+
 .modal {
-  background: white;
-  border-radius: 6px;
-  padding: 2rem;
-  width: 100%;
-  max-width: 460px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  background: white !important;
+  padding: 2.5rem !important;
+  border-radius: 12px !important;
+  width: 90% !important;
+  max-width: 460px !important;
+  max-height: 90vh !important;
+  overflow-y: auto !important;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2) !important;
 }
-.modal-sm {
-  max-width: 320px;
-  text-align: center;
-}
+
 .modal h2 {
-  font-family: "Cormorant Garamond", serif;
-  font-size: 1.8rem;
-  font-weight: 300;
-  color: #1a1410;
-  margin-bottom: 1.5rem;
+  font-family: "Cormorant Garamond", serif !important;
+  font-size: 1.6rem !important;
+  color: #1a1410 !important;
+  margin-bottom: 1.5rem !important;
 }
-.modal p {
-  color: #6b4c2a;
-  font-size: 0.85rem;
-  margin-bottom: 1.5rem;
-}
-.form-group {
-  margin-bottom: 1rem;
-}
+
+.modal-sm { max-width: 380px !important; text-align: center !important; }
+.modal-sm p { color: #666 !important; margin-top: 0.4rem !important; font-size: 0.9rem !important; }
+.delete-icon { font-size: 2.5rem !important; }
+
+.form-group { margin-bottom: 1.2rem !important; }
+
 .form-group label {
-  display: block;
-  font-size: 0.7rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #6b4c2a;
-  margin-bottom: 0.4rem;
-  font-weight: 600;
+  display: block !important;
+  font-size: 0.73rem !important;
+  font-weight: 600 !important;
+  color: #6b4c2a !important;
+  margin-bottom: 6px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
 }
+
 .form-group input,
-.form-group select {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #e0d8d0;
-  border-radius: 4px;
-  font-family: "Montserrat", sans-serif;
-  font-size: 0.85rem;
-  color: #2d2520;
-  background: #fdfbf9;
-  box-sizing: border-box;
-  transition: border-color 0.2s;
+.form-group select,
+.form-group textarea {
+  width: 100% !important;
+  padding: 10px 14px !important;
+  border: 1px solid #ddd !important;
+  border-radius: 6px !important;
+  font-size: 0.9rem !important;
+  font-family: "Montserrat", sans-serif !important;
+  color: #1a1410 !important;
+  background: white !important;
 }
+
 .form-group input:focus,
-.form-group select:focus {
-  outline: none;
-  border-color: #c9963a;
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none !important;
+  border-color: #c9963a !important;
+  box-shadow: 0 0 0 3px rgba(201,150,58,0.1) !important;
 }
-.checkbox-group label {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  text-transform: none;
-  font-size: 0.85rem;
-  cursor: pointer;
-}
+
+.form-group textarea { resize: vertical !important; }
+.input-disabled { background: #f5f5f5 !important; color: #999 !important; cursor: not-allowed !important; }
+
 .modal-actions {
-  display: flex;
-  gap: 0.75rem;
-  justify-content: flex-end;
-  margin-top: 1.5rem;
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+  margin-top: 1.8rem !important;
 }
+
 .btn-cancel {
-  background: transparent;
-  border: 1px solid #e0d8d0;
-  color: #6b4c2a;
-  padding: 10px 20px;
-  border-radius: 4px;
-  font-family: "Montserrat", sans-serif;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: 0.2s;
+  all: unset !important;
+  box-sizing: border-box !important;
+  background: #f5f0e8 !important;
+  padding: 10px 20px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  font-family: "Montserrat", sans-serif !important;
+  font-size: 0.88rem !important;
+  color: #555 !important;
 }
-.btn-cancel:hover {
-  border-color: #c9963a;
-  color: #c9963a;
-}
+.btn-cancel:hover { background: #ede8df !important; }
+
 .btn-save {
-  background: #c9963a;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 4px;
-  font-family: "Montserrat", sans-serif;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: 0.2s;
+  all: unset !important;
+  box-sizing: border-box !important;
+  background: #c9963a !important;
+  color: white !important;
+  padding: 10px 22px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  font-family: "Montserrat", sans-serif !important;
+  font-weight: 600 !important;
+  font-size: 0.88rem !important;
 }
-.btn-save:hover {
-  background: #b8852e;
+.btn-save:hover { background: #b8852e !important; }
+
+.btn-delete-confirm {
+  all: unset !important;
+  box-sizing: border-box !important;
+  background: #d32f2f !important;
+  color: white !important;
+  padding: 10px 22px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  font-family: "Montserrat", sans-serif !important;
+  font-weight: 600 !important;
+  font-size: 0.88rem !important;
 }
+.btn-delete-confirm:hover { background: #b71c1c !important; }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed !important;
+  bottom: 2rem !important;
+  right: 2rem !important;
+  padding: 14px 24px !important;
+  border-radius: 8px !important;
+  font-family: "Montserrat", sans-serif !important;
+  font-size: 0.9rem !important;
+  font-weight: 600 !important;
+  z-index: 99999 !important;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15) !important;
+  animation: slideIn 0.3s ease !important;
+}
+.toast.success { background: #2e7d32 !important; color: white !important; }
+.toast.error   { background: #c62828 !important; color: white !important; }
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+/* ── IMAGEN PRODUCTO (tabla) ── */
+.td-img { width: 60px !important; padding: 6px 10px !important; }
+.thumb { width: 48px !important; height: 48px !important; object-fit: cover !important; border-radius: 6px !important; border: 1px solid #e8e3dc !important; }
+.no-img { font-size: 0.78rem !important; color: #bbb !important; }
+
+/* ── UPLOAD AREA ── */
+.img-upload-area { display: flex !important; flex-direction: column !important; align-items: flex-start !important; gap: 10px !important; }
+.img-preview { width: 100% !important; max-height: 180px !important; object-fit: cover !important; border-radius: 8px !important; border: 1px solid #ddd !important; }
+.img-placeholder { width: 100% !important; height: 100px !important; background: #f8f6f3 !important; border: 2px dashed #d9cec3 !important; border-radius: 8px !important; display: flex !important; align-items: center !important; justify-content: center !important; font-size: 0.85rem !important; color: #a89880 !important; }
+.file-input { display: none !important; }
+.btn-upload { all: unset !important; box-sizing: border-box !important; background: #f0ebe4 !important; border: 1px solid #d9cec3 !important; color: #5a5040 !important; padding: 8px 16px !important; border-radius: 6px !important; cursor: pointer !important; font-family: "Montserrat", sans-serif !important; font-size: 0.82rem !important; font-weight: 600 !important; transition: background 0.2s !important; }
+.btn-upload:hover:not(:disabled) { background: #e4dcd2 !important; }
+.btn-upload:disabled { opacity: 0.6 !important; cursor: not-allowed !important; }
+.btn-remove-img { all: unset !important; box-sizing: border-box !important; color: #d32f2f !important; font-size: 0.78rem !important; cursor: pointer !important; font-family: "Montserrat", sans-serif !important; font-weight: 600 !important; }
+.btn-remove-img:hover { text-decoration: underline !important; }
+
 </style>
