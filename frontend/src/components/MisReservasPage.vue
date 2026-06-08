@@ -231,7 +231,7 @@
                   String(reservaAeditar?.idReserva).slice(-6).toUpperCase()
                 }}</span
               >
-              <h3 class="modal-title-left">Cambiar fecha,<br /><em>personas y mesa</em></h3>
+              <h3 class="modal-title-left">Cambiar fecha,<br /><em>hora y mesa</em></h3>
             </div>
 
             <!-- ── FECHA ── -->
@@ -321,10 +321,7 @@
                 <button
                   class="ubicacion-card"
                   :class="{ selected: ubicacionEdit === 'interior' }"
-                  @click="
-                    ubicacionEdit = 'interior';
-                    mesaEditSeleccionada = null;
-                  "
+                  @click="seleccionarUbicacionEdit('interior')"
                 >
                   <div class="ubicacion-icon">&#127968;</div>
                   <h3>Interior</h3>
@@ -334,10 +331,7 @@
                 <button
                   class="ubicacion-card"
                   :class="{ selected: ubicacionEdit === 'terraza' }"
-                  @click="
-                    ubicacionEdit = 'terraza';
-                    mesaEditSeleccionada = null;
-                  "
+                  @click="seleccionarUbicacionEdit('terraza')"
                 >
                   <div class="ubicacion-icon">&#127807;</div>
                   <h3>Terraza exterior</h3>
@@ -345,7 +339,28 @@
                   <div class="ubicacion-check">&#10003;</div>
                 </button>
               </div>
+            </div>
 
+            <div class="edit-seccion" v-if="fechaEditSeleccionada">
+              <label class="form-label">Nueva hora</label>
+              <div class="horas-grid">
+                <button
+                  v-for="h in horasDisponiblesEdit"
+                  :key="h"
+                  class="hora-btn"
+                  :class="{
+                    selected: horaEditSeleccionada === h,
+                    unavailable: !isHoraAvailableEdit(h),
+                  }"
+                  :disabled="!isHoraAvailableEdit(h)"
+                  @click="seleccionarHoraEdit(h)"
+                >
+                  {{ h }}
+                </button>
+              </div>
+            </div>
+
+            <div class="edit-seccion" v-if="fechaEditSeleccionada && horaEditSeleccionada">
               <label class="form-label">Selecciona mesa</label>
               <div class="disponibilidad-info">
                 <div class="disp-badge" :class="disponibilidadEdit.clase">
@@ -536,6 +551,7 @@ import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
 import Cabecera from "./Cabecera.vue";
 import Footer from "./Footer.vue";
 import { API_BASE_URL as DAB } from "@/config/api";
+import { getUserDbEmail } from "@/config/authUser";
 
 export default {
   name: "MisReservasPage",
@@ -565,6 +581,7 @@ export default {
       modalEdicion: false,
       reservaAeditar: null,
       guardando: false,
+      restaurandoEdicion: false,
 
       // Calendario edición
       mesVistaEdit: new Date(
@@ -577,9 +594,18 @@ export default {
 
       // Campos editables
       mesaEditSeleccionada: null,
+      horaEditSeleccionada: null,
       ubicacionEdit: null,
       personasEdit: 1,
       personasOriginalEdit: 1,
+      horasDisponiblesEdit: [
+        "13:00",
+        "14:00",
+        "15:00",
+        "20:00",
+        "21:00",
+        "22:00",
+      ],
 
       // Datos BD
       todasLasMesas: [],
@@ -639,12 +665,13 @@ export default {
     },
 
     mesasDisponiblesEdit() {
-      if (!this.fechaEditSeleccionada) return [];
+      if (!this.fechaEditSeleccionada || !this.horaEditSeleccionada) return [];
       const mesasOcupadasIds = this.reservasDelDiaEdit
         .filter(
           (r) =>
             (r.estado === "confirmada" || r.estado === "pendiente") &&
-            r.idReserva !== this.reservaAeditar?.idReserva,
+            r.idReserva !== this.reservaAeditar?.idReserva &&
+            String(r.hora).substring(0, 5) === this.horaEditSeleccionada,
         )
         .map((r) => r.idMesa);
       return this.todasLasMesas
@@ -692,6 +719,7 @@ export default {
     puedeGuardarEdit() {
       return (
         !!this.fechaEditSeleccionada &&
+        !!this.horaEditSeleccionada &&
         !!this.mesaEditSeleccionada &&
         this.personasEdit >= this.personasOriginalEdit
       );
@@ -756,11 +784,28 @@ export default {
   watch: {
     async fechaEditSeleccionada(nuevaFecha) {
       if (!nuevaFecha) return;
-      this.mesaEditSeleccionada = null;
+      if (!this.restaurandoEdicion) {
+        this.horaEditSeleccionada = null;
+        this.mesaEditSeleccionada = null;
+      }
       await this.cargarReservasDelDiaEdit();
     },
 
     personasEdit() {
+      if (this.horaEditSeleccionada && !this.isHoraAvailableEdit(this.horaEditSeleccionada)) {
+        this.horaEditSeleccionada = null;
+      }
+
+      const mesa = this.mesasDisponiblesEdit.find(
+        (m) => m.idMesa === this.mesaEditSeleccionada,
+      );
+
+      if (!mesa || !this.mesaTieneCapacidadCorrectaEdit(mesa)) {
+        this.mesaEditSeleccionada = null;
+      }
+    },
+
+    horaEditSeleccionada() {
       const mesa = this.mesasDisponiblesEdit.find(
         (m) => m.idMesa === this.mesaEditSeleccionada,
       );
@@ -830,7 +875,7 @@ export default {
     },
 
     async resolverIdUsuarioMySQL() {
-      const email = this.usuarioActual?.email;
+      const email = getUserDbEmail(this.usuarioActual);
       if (!email) return;
       try {
         const res = await fetch(`${DAB}/Usuario`);
@@ -1024,9 +1069,11 @@ export default {
     // ── EDICIÓN ─────────────────────────────────────────────────
 
     abrirEdicion(reserva) {
+      this.restaurandoEdicion = true;
       this.reservaAeditar = reserva;
       this.fechaEditSeleccionada = null;
       this.mesaEditSeleccionada = null;
+      this.horaEditSeleccionada = null;
       this.ubicacionEdit = null;
       this.reservasDelDiaEdit = [];
       this.personasOriginalEdit = reserva.numPersonas || 1;
@@ -1039,6 +1086,13 @@ export default {
 
       const f = new Date(reserva.fecha);
       this.mesVistaEdit = new Date(f.getUTCFullYear(), f.getUTCMonth(), 1);
+      this.fechaEditSeleccionada = new Date(
+        f.getUTCFullYear(),
+        f.getUTCMonth(),
+        f.getUTCDate(),
+      );
+      this.horaEditSeleccionada = this.formatHora(reserva.hora || "20:00");
+      this.mesaEditSeleccionada = reserva.idMesa;
 
       // Reset payment variables
       this.pasoEdit = 1;
@@ -1053,7 +1107,12 @@ export default {
       this.pagandoEdit = false;
 
       this.modalEdicion = true;
-      this.cargarReservasMesEdit();
+      Promise.all([
+        this.cargarReservasMesEdit(),
+        this.cargarReservasDelDiaEdit(),
+      ]).finally(() => {
+        this.restaurandoEdicion = false;
+      });
     },
 
     cerrarEdicion() {
@@ -1061,9 +1120,11 @@ export default {
       this.reservaAeditar = null;
       this.fechaEditSeleccionada = null;
       this.mesaEditSeleccionada = null;
+      this.horaEditSeleccionada = null;
       this.ubicacionEdit = null;
       this.personasEdit = 1;
       this.personasOriginalEdit = 1;
+      this.restaurandoEdicion = false;
       this.pasoEdit = 1;
       this.metodoPagoEdit = "tarjeta";
       this.pagoEdit = {
@@ -1097,13 +1158,51 @@ export default {
       if (this.isPast(day)) return false;
       const iso = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, "0")}-${String(day.getDate()).padStart(2, "0")}`;
       const reservasEseDia = this.reservasPorFechaEdit[iso] || [];
-      const mesasOcupadas = reservasEseDia
-        .filter(
-          (r) =>
-            (r.estado === "confirmada" || r.estado === "pendiente") &&
-            r.idReserva !== this.reservaAeditar?.idReserva,
-        )
-        .map((r) => r.idMesa);
+      const reservasActivas = reservasEseDia.filter(
+        (r) =>
+          (r.estado === "confirmada" || r.estado === "pendiente") &&
+          r.idReserva !== this.reservaAeditar?.idReserva,
+      );
+
+      return this.todasLasMesas.some((m) => {
+        const ubUsuario = (this.ubicacionEdit || "").toLowerCase();
+        const ubMesa = (m.ubicacion || "").toLowerCase();
+
+        if (
+          !m.disponible ||
+          Number(m.capacidad) !== this.capacidadMesaRequeridaEdit ||
+          (ubUsuario && ubMesa !== ubUsuario)
+        ) {
+          return false;
+        }
+
+        return this.horasDisponiblesEdit.some(
+          (h) =>
+            !reservasActivas.some(
+              (r) =>
+                r.idMesa === m.idMesa &&
+                String(r.hora).substring(0, 5) === h,
+            ),
+        );
+      });
+    },
+
+    selectFechaEdit(day) {
+      this.fechaEditSeleccionada = day;
+    },
+
+    isHoraAvailableEdit(hora) {
+      if (!this.fechaEditSeleccionada) return false;
+
+      const reservasEsaHora = this.reservasDelDiaEdit.filter(
+        (r) =>
+          (r.estado === "confirmada" || r.estado === "pendiente") &&
+          r.idReserva !== this.reservaAeditar?.idReserva &&
+          String(r.hora).substring(0, 5) === hora,
+      );
+
+      const mesasOcupadasIds = reservasEsaHora.map((r) => r.idMesa);
+
       return this.todasLasMesas.some((m) => {
         const ubUsuario = (this.ubicacionEdit || "").toLowerCase();
         const ubMesa = (m.ubicacion || "").toLowerCase();
@@ -1112,13 +1211,23 @@ export default {
           !!m.disponible &&
           Number(m.capacidad) === this.capacidadMesaRequeridaEdit &&
           (!ubUsuario || ubMesa === ubUsuario) &&
-          !mesasOcupadas.includes(m.idMesa)
+          !mesasOcupadasIds.includes(m.idMesa)
         );
       });
     },
 
-    selectFechaEdit(day) {
-      this.fechaEditSeleccionada = day;
+    seleccionarHoraEdit(hora) {
+      if (!this.isHoraAvailableEdit(hora)) return;
+      this.horaEditSeleccionada = hora;
+    },
+
+    seleccionarUbicacionEdit(ubicacion) {
+      this.ubicacionEdit = ubicacion;
+      this.mesaEditSeleccionada = null;
+
+      if (this.horaEditSeleccionada && !this.isHoraAvailableEdit(this.horaEditSeleccionada)) {
+        this.horaEditSeleccionada = null;
+      }
     },
 
     mesaTieneCapacidadCorrectaEdit(mesa) {
@@ -1224,6 +1333,7 @@ export default {
 
         const body = {
           fecha: this.fechaEditISO,
+          hora: `${this.horaEditSeleccionada}:00`,
           idMesa: this.mesaEditSeleccionada,
           numPersonas: this.personasEdit,
         };
@@ -1243,6 +1353,7 @@ export default {
         );
         if (idx !== -1) {
           this.reservas[idx].fecha = this.fechaEditISO;
+          this.reservas[idx].hora = `${this.horaEditSeleccionada}:00`;
           this.reservas[idx].idMesa = this.mesaEditSeleccionada;
           this.reservas[idx].numPersonas = this.personasEdit;
         }
@@ -1283,6 +1394,7 @@ export default {
 
       const body = {
         fecha: this.fechaEditISO,
+        hora: `${this.horaEditSeleccionada}:00`,
         idMesa: this.mesaEditSeleccionada,
         numPersonas: this.personasEdit,
         fianza: nuevaFianza,
@@ -1308,6 +1420,7 @@ export default {
       );
       if (idx !== -1) {
         this.reservas[idx].fecha = this.fechaEditISO;
+        this.reservas[idx].hora = `${this.horaEditSeleccionada}:00`;
         this.reservas[idx].idMesa = this.mesaEditSeleccionada;
         this.reservas[idx].numPersonas = this.personasEdit;
         this.reservas[idx].fianza = nuevaFianza;
@@ -2432,6 +2545,11 @@ export default {
   background: var(--dark);
   color: var(--cream);
   border-color: var(--dark);
+}
+.hora-btn.unavailable {
+  opacity: 0.4;
+  cursor: not-allowed;
+  text-decoration: line-through;
 }
 
 /* PERSONAS */

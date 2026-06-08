@@ -123,8 +123,29 @@
               </div>
             </div>
 
+            <!-- Horario -->
+            <div class="ubicacion-section" v-if="fechaSeleccionada">
+              <label class="form-label">¿A qué hora quieres venir?</label>
+              <div class="horarios-grid">
+                <button
+                  v-for="h in horasDisponibles"
+                  :key="h"
+                  class="horario-btn"
+                  :class="{
+                    selected: horaSeleccionada === h,
+                    unavailable: !isHoraAvailable(h)
+                  }"
+                  :disabled="!isHoraAvailable(h)"
+                  @click="horaSeleccionada = h"
+                >
+                  {{ h }}
+                  <span class="hora-tag">{{ getHoraTag(h) }}</span>
+                </button>
+              </div>
+            </div>
+
             <!-- Mesa -->
-            <div class="mesas-section" v-if="fechaSeleccionada">
+            <div class="mesas-section" v-if="fechaSeleccionada && horaSeleccionada">
               <div class="disponibilidad-info">
                 <div class="disp-badge" :class="disponibilidadMesas.clase">
                   <span class="disp-dot"></span>
@@ -208,7 +229,7 @@
                 </div>
                 <div class="resumen-item">
                   <span class="resumen-icon">🕐</span>
-                  <span>Mesa {{ mesaSeleccionada }}</span>
+                  <span>Mesa {{ mesaSeleccionada }} a las {{ horaSeleccionada }}</span>
                 </div>
                 <div class="resumen-item">
                   <span class="resumen-icon">👥</span>
@@ -255,7 +276,7 @@
                   </div>
                   <div class="resumen-item">
                     <span class="resumen-icon">🕐</span>
-                    <span>Mesa {{ mesaSeleccionada }}</span>
+                    <span>Mesa {{ mesaSeleccionada }} a las {{ horaSeleccionada }}</span>
                   </div>
                   <div class="resumen-item">
                     <span class="resumen-icon">👥</span>
@@ -401,7 +422,7 @@
                 </div>
                 <div class="resumen-item">
                   <span class="resumen-icon">🕐</span>
-                  <span>Mesa {{ mesaSeleccionada }}</span>
+                  <span>Mesa {{ mesaSeleccionada }} a las {{ horaSeleccionada }}</span>
                 </div>
                 <div class="resumen-item">
                   <span class="resumen-icon">👥</span>
@@ -437,6 +458,7 @@ import { getAuth, onAuthStateChanged } from "firebase/auth";
 import Cabecera from "./Cabecera.vue";
 import Footer from "./Footer.vue";
 import { API_BASE_URL as DAB } from "@/config/api";
+import { getUserDbEmail } from "@/config/authUser";
 
 const RESERVA_DRAFT_KEY = "laBrasaReservaPendiente";
 
@@ -461,8 +483,13 @@ export default {
 
       // Reserva
       mesaSeleccionada: null,
+      horaSeleccionada: null,
       personas: 2,
       ubicacion: "interior",
+      horasDisponibles: [
+        "13:00", "13:30", "14:00", "14:30", "15:00",
+        "20:00", "20:30", "21:00", "21:30", "22:00", "22:30"
+      ],
 
       // Datos BD
       todasLasMesas: [],
@@ -571,35 +598,28 @@ export default {
     },
 
     mesasDisponibles() {
-
-      if (!this.fechaSeleccionada) return [];
+      if (!this.fechaSeleccionada || !this.horaSeleccionada) return [];
 
       const mesasOcupadasIds = this.reservasDelDia
           .filter(r =>
-              r.estado === "confirmada" ||
-              r.estado === "pendiente"
+              (r.estado === "confirmada" || r.estado === "pendiente") &&
+              String(r.hora).substring(0, 5) === this.horaSeleccionada
           )
           .map(r => r.idMesa);
 
       return this.todasLasMesas
-
           .filter(m => {
-
             const ubUsuario = this.ubicacion.toLowerCase();
             const ubMesa = (m.ubicacion || "").toLowerCase();
 
             return ubUsuario === "cualquiera" || ubMesa === ubUsuario;
           })
-
           .map(m => ({
-
             ...m,
-
             disponible:
                 !!m.disponible &&
                 !mesasOcupadasIds.includes(m.idMesa),
           }))
-
           .sort((a, b) =>
               Number(a.capacidad) - Number(b.capacidad) ||
               Number(a.idMesa) - Number(b.idMesa)
@@ -668,9 +688,9 @@ export default {
     },
 
     canGoStep2() {
-
       return (
           this.fechaSeleccionada &&
+          this.horaSeleccionada &&
           this.ubicacion &&
           this.mesaSeleccionada
       );
@@ -708,11 +728,11 @@ export default {
   watch: {
 
     async fechaSeleccionada(nuevaFecha) {
-
       if (!nuevaFecha) return;
 
       if (!this.restaurandoReservaPendiente) {
         this.mesaSeleccionada = null;
+        this.horaSeleccionada = null;
       }
 
       await this.cargarReservasDelDia();
@@ -721,10 +741,17 @@ export default {
     ubicacion() {
       if (this.restaurandoReservaPendiente) return;
       this.mesaSeleccionada = null;
+      if (this.horaSeleccionada && !this.isHoraAvailable(this.horaSeleccionada)) {
+        this.horaSeleccionada = null;
+      }
     },
 
     personas() {
       if (this.restaurandoReservaPendiente) return;
+
+      if (this.horaSeleccionada && !this.isHoraAvailable(this.horaSeleccionada)) {
+        this.horaSeleccionada = null;
+      }
 
       const mesa = this.mesasDisponibles.find(
           m => m.idMesa === this.mesaSeleccionada
@@ -796,6 +823,7 @@ export default {
           RESERVA_DRAFT_KEY,
           JSON.stringify({
             fecha: this.fechaISO,
+            hora: this.horaSeleccionada,
             mesa: this.mesaSeleccionada,
             personas: this.personas,
             ubicacion: this.ubicacion,
@@ -818,6 +846,7 @@ export default {
           this.fechaSeleccionada = new Date(year, month - 1, day);
           this.mesVista = new Date(year, month - 1, 1);
         }
+        if (draft.hora) this.horaSeleccionada = draft.hora;
         if (draft.mesa) this.mesaSeleccionada = Number(draft.mesa);
 
         this.$nextTick(() => {
@@ -849,12 +878,14 @@ export default {
     async autocompletarContacto() {
 
       const emailUsuario =
-          this.usuarioActual?.email;
+          getUserDbEmail(this.usuarioActual);
 
       if (!emailUsuario) return;
 
-      this.contacto.email = emailUsuario;
-      this.contactoBloqueado.email = true;
+      if (this.usuarioActual?.email) {
+        this.contacto.email = this.usuarioActual.email;
+        this.contactoBloqueado.email = true;
+      }
 
       if (!this.contacto.nombre && this.usuarioActual?.displayName) {
         this.contacto.nombre = this.usuarioActual.displayName;
@@ -960,34 +991,62 @@ export default {
     },
 
     isDayAvailable(day) {
-
       if (this.isPast(day)) return false;
 
-      const iso =
-          `${day.getFullYear()}-${String(day.getMonth()+1).padStart(2,'0')}-${String(day.getDate()).padStart(2,'0')}`;
+      const iso = `${day.getFullYear()}-${String(day.getMonth()+1).padStart(2,'0')}-${String(day.getDate()).padStart(2,'0')}`;
+      const reservasEseDia = this.reservasPorFecha[iso] || [];
 
-      const reservasEseDia =
-          this.reservasPorFecha[iso] || [];
+      const activeReservations = reservasEseDia.filter(
+        r => r.estado === "confirmada" || r.estado === "pendiente"
+      );
 
-      const mesasOcupadas =
-          reservasEseDia
-              .filter(r =>
-                  r.estado === "confirmada" ||
-                  r.estado === "pendiente"
-              )
-              .map(r => r.idMesa);
+      return this.todasLasMesas.some(m => {
+        const ubUsuario = this.ubicacion.toLowerCase();
+        const ubMesa = (m.ubicacion || "").toLowerCase();
+
+        if (
+          !m.disponible ||
+          Number(m.capacidad) !== this.capacidadMesaRequerida ||
+          (ubUsuario !== "cualquiera" && ubMesa !== ubUsuario)
+        ) {
+          return false;
+        }
+
+        return this.horasDisponibles.some(h => {
+          return !activeReservations.some(
+            r => r.idMesa === m.idMesa && String(r.hora).substring(0, 5) === h
+          );
+        });
+      });
+    },
+
+    isHoraAvailable(hora) {
+      if (!this.fechaSeleccionada) return false;
+
+      const reservasEsaHora = this.reservasDelDia.filter(
+        r =>
+          (r.estado === "confirmada" || r.estado === "pendiente") &&
+          String(r.hora).substring(0, 5) === hora
+      );
+
+      const mesasOcupadasIds = reservasEsaHora.map(r => r.idMesa);
 
       return this.todasLasMesas.some(m => {
         const ubUsuario = this.ubicacion.toLowerCase();
         const ubMesa = (m.ubicacion || "").toLowerCase();
 
         return (
-            !!m.disponible &&
-            Number(m.capacidad) === this.capacidadMesaRequerida &&
-            (ubUsuario === "cualquiera" || ubMesa === ubUsuario) &&
-            !mesasOcupadas.includes(m.idMesa)
+          !!m.disponible &&
+          Number(m.capacidad) === this.capacidadMesaRequerida &&
+          (ubUsuario === "cualquiera" || ubMesa === ubUsuario) &&
+          !mesasOcupadasIds.includes(m.idMesa)
         );
       });
+    },
+
+    getHoraTag(hora) {
+      const h = parseInt(hora.split(":")[0]);
+      return h < 17 ? "Almuerzo" : "Cena";
     },
 
     selectFecha(day) {
@@ -1187,7 +1246,7 @@ export default {
           throw new Error("Mesa bloqueada para este número de personas");
         }
 
-        const emailUsuario = this.usuarioActual?.email;
+        const emailUsuario = getUserDbEmail(this.usuarioActual);
 
         if (!emailUsuario) {
           throw new Error("Debes iniciar sesión");
@@ -1220,7 +1279,7 @@ export default {
           this.fechaISO,
 
           hora:
-              "20:00:00",
+              this.horaSeleccionada + ":00",
 
           numPersonas:
           this.personas,
@@ -1442,6 +1501,8 @@ export default {
 
       this.mesaSeleccionada = null;
 
+      this.horaSeleccionada = null;
+
       this.personas = 2;
 
       this.ubicacion = "interior";
@@ -1569,7 +1630,7 @@ export default {
           throw new Error("Mesa bloqueada para este número de personas");
         }
 
-        const emailUsuario = this.usuarioActual?.email;
+        const emailUsuario = getUserDbEmail(this.usuarioActual);
 
         if (!emailUsuario) {
           throw new Error("Debes iniciar sesión");
@@ -1590,7 +1651,7 @@ export default {
           idUsuario: usuarioMySQL.idUsuario,
           idMesa: mesaElegida.idMesa,
           fecha: this.fechaISO,
-          hora: "20:00:00",
+          hora: this.horaSeleccionada + ":00",
           numPersonas: this.personas,
           estado: "confirmada",
           fianza: this.fianzaTotal,

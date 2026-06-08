@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { apiUrl } from "@/config/api";
+import { getUserDbEmail } from "@/config/authUser";
 import HomePage from "@/components/HomePage.vue";
 import CatalogoPage from "@/components/CatalogoPage.vue";
 import LoginPage from "@/components/LoginPage.vue";
@@ -70,7 +71,7 @@ const fetchApiList = async (entity, filter = "") => {
 };
 
 const esAdministrador = async (user) => {
-    const email = user?.email?.toLowerCase();
+    const email = getUserDbEmail(user).toLowerCase();
     if (!email) return false;
 
     const usuarios = await fetchApiList(
