@@ -415,6 +415,17 @@ input::placeholder {
   color: #a8a89f;
 }
 
+.error {
+  color: #c62828;
+  background: #fff0f0;
+  border: 1px solid rgba(198, 40, 40, 0.28);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  margin: 2px 0 12px;
+}
+
 /* ── Forgot ── */
 .forgot {
   text-align: right;

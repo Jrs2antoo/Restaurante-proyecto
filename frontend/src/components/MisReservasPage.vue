@@ -160,7 +160,6 @@
             </div>
           </div>
         </div>
-        <Footer />
       </div>
     </section>
 
@@ -549,7 +548,6 @@
 <script>
 import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
 import Cabecera from "./Cabecera.vue";
-import Footer from "./Footer.vue";
 import { API_BASE_URL as DAB } from "@/config/api";
 import { getUserDbEmail } from "@/config/authUser";
 
@@ -558,7 +556,6 @@ export default {
 
   components: {
     Cabecera,
-    Footer,
   },
 
   data() {
@@ -1760,7 +1757,7 @@ export default {
 .main-wrapper {
   max-width: 860px;
   margin: 0 auto;
-  padding: 4rem 5vw 3rem;
+  padding: 4.75rem 5vw 2rem;
 }
 
 /* LOADING / EMPTY */
@@ -1805,7 +1802,12 @@ export default {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
+  padding: 1.2rem 1.35rem;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(201, 150, 58, 0.26);
+  border-radius: 4px;
+  box-shadow: 0 8px 26px rgba(45, 37, 32, 0.06);
   flex-wrap: wrap;
   gap: 1rem;
 }
@@ -2114,9 +2116,9 @@ export default {
   display: inline-flex;
   align-items: center;
   padding: 10px 22px;
-  background: none;
-  color: var(--text);
-  border: 1.5px solid rgba(45, 37, 32, 0.2);
+  background: var(--dark);
+  color: var(--cream);
+  border: 1.5px solid var(--dark);
   font-family: "Jost", sans-serif;
   font-size: 0.7rem;
   letter-spacing: 0.18em;
@@ -2126,12 +2128,14 @@ export default {
   text-decoration: none;
   border-radius: 2px;
   transition:
+    background 0.2s,
     border-color 0.2s,
     color 0.2s;
 }
 .btn-outline:hover {
-  border-color: var(--gold);
-  color: var(--brown);
+  background: var(--brown);
+  border-color: var(--brown);
+  color: var(--cream);
 }
 .btn-danger {
   display: inline-flex;

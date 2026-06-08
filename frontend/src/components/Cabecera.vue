@@ -157,11 +157,12 @@ nav {
   right: 0;
   z-index: 100;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
-  padding: 0 5vw;
+  padding: 0 5vw 10px;
   height: 72px;
-  background: rgba(26, 20, 16, 0.55);
+  background: rgba(26, 20, 16, 0.7);
+  border-bottom: 1px solid rgba(201, 150, 58, 0.22);
   transition:
     background 0.4s,
     box-shadow 0.4s;
@@ -177,6 +178,7 @@ nav.scrolled {
   color: var(--cream, #f5f0e8);
   letter-spacing: 0.06em;
   text-decoration: none;
+  padding-bottom: 4px;
 }
 .nav-logo span {
   color: var(--gold, #c9963a);
@@ -194,10 +196,11 @@ nav.scrolled {
   font-weight: 500;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--cream, #f5f0e8);
+  color: #fff8ef;
   text-decoration: none;
   position: relative;
-  padding-bottom: 4px;
+  padding: 7px 0 6px;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.75);
   transition: color 0.3s;
 }
 .nav-links a::after {

@@ -485,9 +485,9 @@ function firebaseError(code) {
   margin-bottom: 1rem;
 }
 .alert-error {
-  background: #fef0ee;
-  border: 1px solid rgba(216, 90, 48, 0.3);
-  color: #993c1d;
+  background: #fff0f0;
+  border: 1px solid rgba(198, 40, 40, 0.32);
+  color: #c62828;
 }
 .alert-success {
   background: #eefaf2;
@@ -588,8 +588,8 @@ input:focus {
   background: #ffffff;
 }
 input.input-error {
-  border-color: rgba(216, 90, 48, 0.5);
-  box-shadow: 0 0 0 3px rgba(216, 90, 48, 0.08);
+  border-color: rgba(198, 40, 40, 0.55);
+  box-shadow: 0 0 0 3px rgba(198, 40, 40, 0.08);
 }
 input::placeholder {
   color: #a8a89f;
@@ -655,7 +655,7 @@ input:disabled {
 }
 .mismatch-msg {
   font-size: 11px;
-  color: #d85a30;
+  color: #c62828;
   margin-top: 5px;
 }
 
