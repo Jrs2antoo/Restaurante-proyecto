@@ -78,21 +78,17 @@ async function loginSocial(ProviderClass) {
   try {
     const { user } = await signInWithPopup(auth, new ProviderClass());
 
-    if (!user.email) {
+    const dbEmail = getUserDbEmail(user);
+    if (!dbEmail) {
       console.warn("El proveedor no devolvió email; no se guarda en BD");
       router.push(destinoTrasLogin());
       return;
     }
 
     // Intenta insertar — si ya existe (409), el servidor lo ignora
-    await saveUserToDb(user.displayName || "", user.email, user.uid);
-    router.push(destinoTrasLogin());
-    // Intenta insertar — si ya existe (409), el servidor lo ignora
-    const dbEmail = getUserDbEmail(user);
-    if (!dbEmail)
-      throw new Error("No se pudo obtener un identificador del usuario");
-
     await saveUserToDb(getUserDisplayName(user), dbEmail, user.uid);
+
+    // Un solo push al destino tras login
     router.push(destinoTrasLogin());
   } catch (e) {
     console.error("loginSocial error:", e.code, e.message);
@@ -413,17 +409,6 @@ input[type="password"]:focus {
 
 input::placeholder {
   color: #a8a89f;
-}
-
-.error {
-  color: #c62828;
-  background: #fff0f0;
-  border: 1px solid rgba(198, 40, 40, 0.28);
-  border-radius: 10px;
-  padding: 10px 12px;
-  font-size: 13px;
-  font-weight: 500;
-  margin: 2px 0 12px;
 }
 
 /* ── Forgot ── */
