@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import Cabecera from "./Cabecera.vue";
+import Footer from "./Footer.vue";
 import { API_BASE_URL as API } from "@/config/api";
 
 const categoriaActiva = ref("Todo");
@@ -10,88 +11,6 @@ const cargando = ref(true);
 const error = ref(null);
 const categorias = ref(["Todo"]);
 const platos = ref([]);
-
-const imagenesPorCategoria = {
-  Entrantes:
-    "https://images.unsplash.com/photo-1541529086526-db283c563270?w=800&auto=format&fit=crop&q=80",
-  Carnes:
-    "https://images.unsplash.com/photo-1558030006-450675393462?w=800&auto=format&fit=crop&q=80",
-  Pescados:
-    "https://images.unsplash.com/photo-1559847844-5315695dadae?w=800&auto=format&fit=crop&q=80",
-  Postres:
-    "https://images.unsplash.com/photo-1551024601-bec78aea704b?w=800&auto=format&fit=crop&q=80",
-  Bebidas:
-    "https://images.unsplash.com/photo-1544145945-f90425340c7e?w=800&auto=format&fit=crop&q=80",
-};
-
-const imagenesPorPlato = [
-  {
-    claves: ["croqueta", "croquetas"],
-    url: "https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?w=800&auto=format&fit=crop&q=80",
-  },
-  {
-    claves: ["ensalada", "tomate"],
-    url: "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&auto=format&fit=crop&q=80",
-  },
-  {
-    claves: ["jamon", "jamón", "iberico", "ibérico"],
-    url: "https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?w=800&auto=format&fit=crop&q=80",
-  },
-  {
-    claves: ["hamburguesa", "burger"],
-    url: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800&auto=format&fit=crop&q=80",
-  },
-  {
-    claves: ["entrecot", "solomillo", "chulet", "presa", "secreto"],
-    url: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=800&auto=format&fit=crop&q=80",
-  },
-  {
-    claves: ["bacalao", "lubina", "salmon", "salmón", "atun", "atún"],
-    url: "https://images.unsplash.com/photo-1485921325833-c519f76c4927?w=800&auto=format&fit=crop&q=80",
-  },
-  {
-    claves: ["pulpo"],
-    url: "https://images.unsplash.com/photo-1625943553852-781c6dd46faa?w=800&auto=format&fit=crop&q=80",
-  },
-  {
-    claves: ["tarta", "cheesecake"],
-    url: "https://images.unsplash.com/photo-1533134242443-d4fd215305ad?w=800&auto=format&fit=crop&q=80",
-  },
-  {
-    claves: ["brownie", "chocolate"],
-    url: "https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=800&auto=format&fit=crop&q=80",
-  },
-  {
-    claves: ["vino", "copa"],
-    url: "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=800&auto=format&fit=crop&q=80",
-  },
-  {
-    claves: ["cerveza"],
-    url: "https://images.unsplash.com/photo-1608270586620-248524c67de9?w=800&auto=format&fit=crop&q=80",
-  },
-];
-
-const imagenParaProducto = (producto) => {
-  const imagenApi = producto.imagen_url ?? producto.imagen;
-  if (imagenApi) return imagenApi;
-
-  const texto = `${producto.nombre ?? ""} ${producto.descripcion ?? ""}`
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
-
-  const coincidencia = imagenesPorPlato.find(({ claves }) =>
-    claves.some((clave) =>
-      texto.includes(clave.normalize("NFD").replace(/[\u0300-\u036f]/g, "")),
-    ),
-  );
-
-  return (
-    coincidencia?.url ??
-    imagenesPorCategoria[producto.categoria] ??
-    "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&auto=format&fit=crop&q=80"
-  );
-};
 
 const normalizarPrecioProducto = (precio) => {
   const value = Number(precio);
@@ -117,7 +36,10 @@ const cargarProductos = async () => {
     categoria: p.categoria,
     precio: normalizarPrecioProducto(p.precio),
     desc: p.descripcion ?? "",
-    imagen: imagenParaProducto(p),
+    imagen:
+        p.imagen_url ??
+        p.imagen ??
+        "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600&auto=format&fit=crop&q=80",
     disponible: !!p.disponible,
     nuevo: !!p.nuevo,
     popular: !!p.popular,
@@ -260,10 +182,7 @@ onMounted(() => {
       </div>
     </section>
 
-    <footer>
-      <div class="footer-logo">La <span>Brasa</span></div>
-      <p class="footer-copy">© 2026 La Brasa Restaurante · Granada</p>
-    </footer>
+    <Footer />
   </div>
 </template>
 
@@ -294,13 +213,11 @@ onMounted(() => {
   min-height: 100vh;
 }
 
-/* resto de tu CSS exactamente igual */
-
 /* ─── HEADER ─── */
 .catalogo-header {
   position: relative;
-  height: 52vh;
-  min-height: 360px;
+  height: 56vh;
+  min-height: 430px;
   margin-top: 0;
   padding-top: 72px;
   display: flex;
@@ -328,7 +245,7 @@ onMounted(() => {
   position: relative;
   text-align: center;
   color: var(--cream);
-  padding: 0 1.5rem;
+  padding: 40px 1.5rem 0;
   animation: fadeUp 0.9s ease both;
 }
 @keyframes fadeUp {

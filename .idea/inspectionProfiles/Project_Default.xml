@@ -1,4 +1,4 @@
-<component name="InspectionProjectProfileManager">
+git rm frontend/node_modules/.vite/deps/*.js.map frontend/node_modules/.vite/deps/_metadata.json<component name="InspectionProjectProfileManager">
   <profile version="1.0">
     <option name="myName" value="Project Default" />
     <inspection_tool class="HtmlUnknownTag" enabled="true" level="WARNING" enabled_by_default="true">

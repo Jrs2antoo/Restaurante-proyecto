@@ -534,20 +534,14 @@
     </Transition>
 
     <!-- FOOTER -->
-    <footer class="footer">
-      <div class="footer-inner">
-        <div class="footer-logo">La <span>Brasa</span></div>
-        <p class="footer-copy">
-          © 2025 La Brasa · Granada · Todos los derechos reservados
-        </p>
-      </div>
-    </footer>
+    <Footer />
   </div>
 </template>
 
 <script>
 import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
 import Cabecera from "./Cabecera.vue";
+import Footer from "./Footer.vue";
 import { API_BASE_URL as DAB } from "@/config/api";
 import { getUserDbEmail } from "@/config/authUser";
 
@@ -556,6 +550,7 @@ export default {
 
   components: {
     Cabecera,
+    Footer,
   },
 
   data() {
@@ -1687,8 +1682,8 @@ export default {
 /* HERO */
 .hero {
   position: relative;
-  height: 48vh;
-  min-height: 390px;
+  height: 56vh;
+  min-height: 430px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1740,9 +1735,9 @@ export default {
 }
 .hero-sub {
   font-size: 0.9rem;
-  color: rgba(245, 240, 232, 0.82);
-  font-family: "Montserrat", sans-serif;
   font-weight: 300;
+  opacity: 0.82;
+  font-family: "Montserrat", sans-serif;
   letter-spacing: 0.08em;
   max-width: 460px;
   margin: 0 auto;
@@ -1757,7 +1752,7 @@ export default {
 .main-wrapper {
   max-width: 860px;
   margin: 0 auto;
-  padding: 4.75rem 5vw 2rem;
+  padding: 4rem 5vw 3rem;
 }
 
 /* LOADING / EMPTY */
@@ -1802,12 +1797,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1.5rem;
-  padding: 1.2rem 1.35rem;
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(201, 150, 58, 0.26);
-  border-radius: 4px;
-  box-shadow: 0 8px 26px rgba(45, 37, 32, 0.06);
+  margin-bottom: 2rem;
   flex-wrap: wrap;
   gap: 1rem;
 }
@@ -2116,9 +2106,9 @@ export default {
   display: inline-flex;
   align-items: center;
   padding: 10px 22px;
-  background: var(--dark);
-  color: var(--cream);
-  border: 1.5px solid var(--dark);
+  background: none;
+  color: var(--text);
+  border: 1.5px solid rgba(45, 37, 32, 0.2);
   font-family: "Jost", sans-serif;
   font-size: 0.7rem;
   letter-spacing: 0.18em;
@@ -2128,14 +2118,12 @@ export default {
   text-decoration: none;
   border-radius: 2px;
   transition:
-    background 0.2s,
     border-color 0.2s,
     color 0.2s;
 }
 .btn-outline:hover {
-  background: var(--brown);
-  border-color: var(--brown);
-  color: var(--cream);
+  border-color: var(--gold);
+  color: var(--brown);
 }
 .btn-danger {
   display: inline-flex;
