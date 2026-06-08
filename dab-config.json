@@ -12,6 +12,7 @@
       "cors": {
         "origins": [
           "http://localhost:5173",
+          "https://restaurante-proyecto.vercel.app",
           "https://restaurante-proyecto-1gn6k9gxu-jrs2antoos-projects.vercel.app"
         ],
         "allow-credentials": false
